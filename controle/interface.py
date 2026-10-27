@@ -6,9 +6,11 @@ import time
 import numpy as np
 from PySide6.QtCore import QObject, QPointF, QRectF, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QFont, QImage, QKeySequence, QPainter, QPainterPath, QPen, QShortcut
-from PySide6.QtWidgets import (QCheckBox, QComboBox, QFrame, QHBoxLayout, QLabel, QMainWindow,
-                               QPushButton, QScrollArea, QSizePolicy, QSlider, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QCheckBox, QComboBox, QDialog, QFrame, QHBoxLayout, QLabel, QMainWindow,
+                               QMessageBox, QProgressBar, QPushButton, QScrollArea, QSizePolicy, QSlider, QVBoxLayout, QWidget)
 
+from controle.calibracao import INSTRUCOES, Fase, Sessao
+from controle.geometria import medir
 from controle.gravacao import Gravador
 from controle.idioma import tr
 from controle.legenda import GESTOS
@@ -63,6 +65,8 @@ QScrollBar:vertical {{ background: transparent; width: 8px; margin: 4px 0; }}
 QScrollBar::handle:vertical {{ background: {CORES['borda']}; border-radius: 4px; min-height: 30px; }}
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
 QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{ background: transparent; }}
+QProgressBar {{ background: {CORES['cartao']}; border: none; border-radius: 4px; max-height: 8px; }}
+QProgressBar::chunk {{ background: {CORES['destaque']}; border-radius: 4px; }}
 QLabel#aviso {{ background: #4d3a1f; color: {CORES['alerta']}; border-radius: 8px; padding: 8px; }}
 QStatusBar {{ background: {CORES['painel']}; color: {CORES['suave']}; }}
 """
@@ -243,6 +247,10 @@ class PainelMenu(QScrollArea):
         self.espelhar.setChecked(True)
         caixa.addWidget(self.espelhar)
 
+        caixa.addWidget(_secao("Calibração"))
+        self.botao_calibrar = QPushButton(tr("Calibrar meus gestos"))
+        self.botao_calibrar.setObjectName("pequeno")
+        caixa.addWidget(self.botao_calibrar)
         caixa.addWidget(_secao("Gravar sessão (calibração)"))
         self.gesto_gravacao = QComboBox()
         for gesto in GESTOS:
@@ -415,12 +423,86 @@ class PainelLegenda(QScrollArea):
                 self.itens[gesto].definir("destaque", False)
 
 
+class DialogoCalibracao(QDialog):
+    """Conduz a calibração: instrução do passo, barra de tempo e, no fim, o antes/depois."""
+
+    def __init__(self, pai, total_passos: int):
+        super().__init__(pai)
+        self.setWindowTitle(tr("Calibrar meus gestos"))
+        self.setObjectName("raiz")  # o fundo escuro vem do estilo da janela principal
+        self.setStyleSheet(ESTILO)
+        self.setMinimumSize(480, 300)
+        self._total = total_passos
+        caixa = QVBoxLayout(self)
+        caixa.setContentsMargins(20, 18, 20, 18)
+        caixa.setSpacing(10)
+        self.passo = QLabel()
+        self.passo.setObjectName("secao")
+        self.instrucao = QLabel()
+        self.instrucao.setObjectName("titulo")
+        self.instrucao.setWordWrap(True)
+        self.estado = QLabel()
+        self.estado.setObjectName("suave")
+        self.estado.setWordWrap(True)
+        self.barra = QProgressBar()
+        self.barra.setRange(0, 100)
+        self.barra.setTextVisible(False)
+        self.relatorio = QLabel()
+        self.relatorio.setWordWrap(True)
+        self.relatorio.setTextFormat(Qt.TextFormat.RichText)
+        for w in (self.passo, self.instrucao, self.estado, self.barra, self.relatorio):
+            caixa.addWidget(w)
+        botoes = QHBoxLayout()
+        botoes.addStretch()
+        self.botao_cancelar = QPushButton(tr("Cancelar"))
+        self.botao_cancelar.setObjectName("pequeno")
+        self.botao_aplicar = QPushButton(tr("Aplicar e salvar"))
+        self.botao_aplicar.setObjectName("pequeno")
+        self.botao_aplicar.setEnabled(False)
+        botoes.addWidget(self.botao_cancelar)
+        botoes.addWidget(self.botao_aplicar)
+        caixa.addLayout(botoes)
+
+    def atualizar(self, sessao: Sessao):
+        if sessao.concluida:
+            return
+        self.passo.setText(tr("Passo {n} de {total}", n=sessao.indice + 1, total=self._total).upper())
+        self.instrucao.setText(tr(INSTRUCOES[sessao.pose_atual]))
+        if sessao.fase is Fase.PREPARAR:
+            texto = tr("Prepare a mão…") if sessao.tentativa == 1 else tr("Não vi sua mão. Vamos repetir.")
+        else:
+            texto = tr("Segure a pose…")
+        self.estado.setText(texto)
+        self.barra.setValue(round(sessao.progresso * 100))
+
+    def mostrar_resultado(self, resultado):
+        self.passo.setText(tr("Pronto").upper())
+        self.instrucao.setText(tr("Calibração concluída"))
+        self.estado.setText("")
+        self.barra.setValue(100)
+        if resultado.ajustados:
+            linhas = [f"{nome}: {getattr(resultado.limites, nome):.2f}" for nome in sorted(resultado.ajustados)]
+            texto = tr("Acerto nas suas poses: {antes:.0%} → {depois:.0%}", antes=resultado.acuracia_antes,
+                       depois=resultado.acuracia_depois) + "<br>" + ", ".join(linhas)
+        else:
+            texto = tr("Os padrões já servem para a sua mão; nada precisou mudar.")
+        if resultado.avisos:
+            texto += "<br><span style='color:#ffb84d'>" + "<br>".join(resultado.avisos) + "</span>"
+        self.relatorio.setText(texto)
+        self.botao_aplicar.setEnabled(True)
+
+
 class JanelaPrincipal(QMainWindow):
     def __init__(self, pipeline, modo_demonstracao: bool = False, aviso: str | None = None,
                  pasta_gravacoes: pathlib.Path = PASTA_GRAVACOES, perfil=None,
-                 caminho_perfil: pathlib.Path | None = None):
+                 caminho_perfil: pathlib.Path | None = None, perguntar=None):
         super().__init__()
         self.perfil, self.caminho_perfil = perfil, caminho_perfil
+        self._perguntar = perguntar or self._perguntar_sim_ou_nao
+        self.sessao: Sessao | None = None
+        self.dialogo_calibracao: DialogoCalibracao | None = None
+        self._relogio = time.monotonic
+        self._ativo_antes = True
         self.pipeline = pipeline
         self.pasta_gravacoes = pasta_gravacoes
         self.executor = pipeline.executor
@@ -457,6 +539,7 @@ class JanelaPrincipal(QMainWindow):
         if perfil is not None:
             self.menu.aplicar_ajustes(perfil.ajustes)
         self.menu.botao_gravar.clicked.connect(self.alternar_gravacao)
+        self.menu.botao_calibrar.clicked.connect(lambda: self.iniciar_calibracao())
         esquerda.addWidget(self.menu, 1)
         linhas.addLayout(esquerda)
 
@@ -551,6 +634,8 @@ class JanelaPrincipal(QMainWindow):
     # ---------- resultados ----------
 
     def ao_resultado(self, r: Resultado):
+        if self.sessao is not None:
+            self._avancar_calibracao(r)
         self.video.mostrar(r)
         self.legenda.atualizar(r)
         gravador = self.pipeline.gravador
@@ -568,6 +653,74 @@ class JanelaPrincipal(QMainWindow):
 
     def texto_status(self) -> str:
         return self._status.text()
+
+    # ---------- calibração guiada ----------
+
+    def _perguntar_sim_ou_nao(self, titulo: str, texto: str) -> bool:
+        caixa = QMessageBox(QMessageBox.Icon.Question, titulo, texto,
+                            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, self)
+        caixa.button(QMessageBox.StandardButton.Yes).setText(tr("Calibrar agora"))
+        caixa.button(QMessageBox.StandardButton.No).setText(tr("Depois"))
+        return caixa.exec() == QMessageBox.StandardButton.Yes
+
+    def oferecer_calibracao(self):
+        """No primeiro uso: a calibração é opcional, mas ajuda quem tem a mão diferente dos padrões."""
+        if self.perfil is None or self.perfil.calibrado or self.sessao is not None:
+            return
+        if self._perguntar(tr("Primeiro uso"), tr("Quer calibrar os gestos para a sua mão? Leva cerca de 40 segundos. "
+                                                  "Você pode fazer isso depois, pelo botão do menu.")):
+            self.iniciar_calibracao()
+
+    def iniciar_calibracao(self, sessao: Sessao | None = None, relogio=None):
+        if self.sessao is not None:
+            return
+        self.sessao = sessao or Sessao()
+        self._relogio = relogio or time.monotonic
+        self._ativo_antes = self.executor.ativo
+        if self._ativo_antes:
+            self.pipeline.pausar()  # as poses de calibração não podem clicar nem fechar nada
+            self._atualizar_botao()
+        self.dialogo_calibracao = DialogoCalibracao(self, len(self.sessao.passos))
+        self.dialogo_calibracao.botao_cancelar.clicked.connect(self.cancelar_calibracao)
+        self.dialogo_calibracao.botao_aplicar.clicked.connect(self.aplicar_calibracao)
+        self.dialogo_calibracao.rejected.connect(self.cancelar_calibracao)
+        self.dialogo_calibracao.atualizar(self.sessao)
+        self.dialogo_calibracao.show()
+
+    def _avancar_calibracao(self, r: Resultado):
+        largura_altura = r.imagem.shape[1] / r.imagem.shape[0]
+        self.sessao.atualizar(self._relogio(), [medir(m, largura_altura) for m in r.maos])
+        if self.sessao.concluida:
+            self.dialogo_calibracao.mostrar_resultado(self.sessao.resultado())
+        else:
+            self.dialogo_calibracao.atualizar(self.sessao)
+
+    def _encerrar_calibracao(self):
+        dialogo, self.sessao, self.dialogo_calibracao = self.dialogo_calibracao, None, None
+        if dialogo is not None:
+            dialogo.rejected.disconnect(self.cancelar_calibracao)
+            dialogo.close()
+        if self._ativo_antes:
+            self.pipeline.retomar()
+        self._atualizar_botao()
+
+    def cancelar_calibracao(self):
+        if self.sessao is not None:
+            self.sessao.cancelar()
+            self._encerrar_calibracao()
+
+    def aplicar_calibracao(self):
+        if self.sessao is None or not self.sessao.concluida:
+            return
+        resultado = self.sessao.resultado()
+        if self.perfil is not None:
+            self.perfil.limites = {k: getattr(resultado.limites, k) for k in resultado.ajustados}
+            self.perfil.calibrado = True
+        reconhecedor = getattr(self.pipeline, "reconhecedor", None)
+        if reconhecedor is not None:
+            reconhecedor.limites = resultado.limites  # vale já no próximo quadro
+        self._encerrar_calibracao()
+        self._salvar_perfil()
 
     def _salvar_perfil(self):
         if self.perfil is None or self.caminho_perfil is None:

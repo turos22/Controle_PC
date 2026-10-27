@@ -124,6 +124,46 @@ EN = {
     "pausado": "paused",
     "ativo": "active",
     "Não consegui salvar o perfil em {caminho}: {erro}": "Could not save the profile to {caminho}: {erro}",
+    # --- calibração ---
+    "Calibração": "Calibration",
+    "Calibrar meus gestos": "Calibrate my gestures",
+    "Cancelar": "Cancel",
+    "Aplicar e salvar": "Apply and save",
+    "Passo {n} de {total}": "Step {n} of {total}",
+    "Pronto": "Done",
+    "Prepare a mão…": "Get your hand ready…",
+    "Não vi sua mão. Vamos repetir.": "I could not see your hand. Let's repeat.",
+    "Segure a pose…": "Hold the pose…",
+    "Calibração concluída": "Calibration complete",
+    "Acerto nas suas poses: {antes:.0%} → {depois:.0%}": "Accuracy on your poses: {antes:.0%} → {depois:.0%}",
+    "Os padrões já servem para a sua mão; nada precisou mudar.": "The defaults already suit your hand; nothing needed to change.",
+    "Calibrar agora": "Calibrate now",
+    "Depois": "Later",
+    "Primeiro uso": "First use",
+    "Quer calibrar os gestos para a sua mão? Leva cerca de 40 segundos. Você pode fazer isso depois, pelo "
+    "botão do menu.":
+        "Do you want to calibrate the gestures to your hand? It takes about 40 seconds. You can also do it "
+        "later, from the menu button.",
+    "Mão aberta, dedos afastados, palma para a câmera.": "Open hand, fingers apart, palm facing the camera.",
+    "Mão fechada em punho.": "Closed fist.",
+    "Só o indicador esticado, como se apontasse.": "Only the index finger extended, as if pointing.",
+    "Indicador e médio esticados (um V); os outros dobrados.": "Index and middle fingers extended (a V); the others curled.",
+    "Indicador, médio e anelar esticados; mindinho e polegar dobrados.":
+        "Index, middle and ring fingers extended; pinky and thumb curled.",
+    "Pinça: ponta do polegar encostada na ponta do indicador; os outros dedos dobrados.":
+        "Pinch: thumb tip touching index tip; the other fingers curled.",
+    "Indicador esticado e polegar bem aberto, formando um L; os outros dobrados.":
+        "Index finger extended and thumb wide open, forming an L; the others curled.",
+    "{pose}: só {n} amostras (mínimo {minimo}); ignorada": "{pose}: only {n} samples (minimum {minimo}); ignored",
+    "dedos esticados e dobrados se confundem; limiares de dedo mantidos":
+        "extended and curled fingers overlap; finger thresholds kept",
+    "mindinho de três dedos e de mão aberta se confundem; limiar mantido":
+        "pinky in three-fingers and in open hand overlap; threshold kept",
+    "polegar apontando e em L se confundem; ângulo mantido": "thumb pointing and in L overlap; angle kept",
+    "não consegui separar bem as suas poses (ou os limiares novos acertariam menos que os padrões); "
+    "mantidos os padrões. Repita a calibração com calma.":
+        "I could not tell your poses apart well (or the new thresholds would do worse than the defaults); "
+        "defaults kept. Please repeat the calibration calmly.",
     # --- avisos do sistema ---
     "não abriu a câmera {indice} (outro programa usando, como o OBS, ou sem permissão de câmera para "
     "este programa?)":

@@ -63,6 +63,7 @@ class Perfil:
     ajustes: dict = field(default_factory=dict)       # estado do menu (velocidade, rolagem, ...)
     idioma: str | None = None                         # None: segue o idioma do sistema
     camera: int = 0
+    calibrado: bool = False                           # a calibração guiada já foi feita
     avisos: list[str] = field(default_factory=list, compare=False)
 
     def limites_efetivos(self) -> Limites:
@@ -91,20 +92,24 @@ class Perfil:
         if isinstance(camera, bool) or not isinstance(camera, int) or camera < 0:
             avisos.append("perfil: camera precisa ser um inteiro ≥ 0; usando 0")
             camera = 0
+        calibrado = bruto.get("calibrado", False)
+        if not isinstance(calibrado, bool):
+            avisos.append("perfil: calibrado precisa ser verdadeiro ou falso; ignorado")
+            calibrado = False
         ajustes = bruto.get("ajustes", {})
         if not isinstance(ajustes, dict):
             avisos.append("perfil: 'ajustes' deveria ser um objeto; ignorado")
             ajustes = {}
         return cls(limites=_validar("limites", bruto.get("limites", {}), Limites, avisos),
                    parametros=_validar("parametros", bruto.get("parametros", {}), Parametros, avisos),
-                   ajustes=ajustes, idioma=idioma, camera=camera, avisos=avisos)
+                   ajustes=ajustes, idioma=idioma, camera=camera, calibrado=calibrado, avisos=avisos)
 
     def salvar(self, caminho: pathlib.Path):
         """Grava em arquivo temporário e troca: um desligamento no meio não deixa JSON pela metade."""
         caminho = pathlib.Path(caminho)
         caminho.parent.mkdir(parents=True, exist_ok=True)
         conteudo = {"limites": self.limites, "parametros": self.parametros, "ajustes": self.ajustes,
-                    "idioma": self.idioma, "camera": self.camera}
+                    "idioma": self.idioma, "camera": self.camera, "calibrado": self.calibrado}
         descritor, temporario = tempfile.mkstemp(dir=caminho.parent, suffix=".tmp")
         try:
             with os.fdopen(descritor, "w", encoding="utf-8") as f:

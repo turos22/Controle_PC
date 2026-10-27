@@ -7,6 +7,7 @@ import cv2  # noqa: F401 — importado antes do Qt: ele define o caminho de plug
 
 os.environ.pop("QT_QPA_PLATFORM_PLUGIN_PATH", None)  # o PySide6 usa os próprios plugins
 
+from PySide6.QtCore import QTimer  # noqa: E402
 from PySide6.QtWidgets import QApplication, QMessageBox  # noqa: E402
 
 from controle.captura import Camera  # noqa: E402
@@ -67,6 +68,7 @@ def main(argv: list[str] | None = None) -> int:
     thread = threading.Thread(target=pipeline.rodar, name="pipeline", daemon=True)
     thread.start()
     janela.show()
+    QTimer.singleShot(1000, janela.oferecer_calibracao)  # só pergunta se o perfil ainda não foi calibrado
     codigo = app.exec()
     pipeline.parar()
     thread.join(timeout=3)

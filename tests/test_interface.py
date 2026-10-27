@@ -211,3 +211,83 @@ def test_interface_em_ingles(app, tmp_path):
         j.close()
     finally:
         idioma.definir_idioma("pt")
+
+
+# ---------- calibração guiada ----------
+
+def feed_calibracao(j, relogio, de, ate, passo=0.1, mao=None):
+    mao = mao or mao_em("v01", 1.0)
+    for i in range(round(de / passo), round(ate / passo)):
+        relogio[0] = i * passo
+        j.ao_resultado(resultado(maos=[mao]))
+
+
+def janela_com_perfil(app, tmp_path):
+    from controle.perfil import Perfil
+    p = PipelineFalso()
+    perfil = Perfil()
+    j = JanelaPrincipal(p, pasta_gravacoes=tmp_path, perfil=perfil, caminho_perfil=tmp_path / "perfil.json")
+    return j, p, perfil
+
+
+def test_botao_de_calibrar_pausa_os_gestos_e_abre_a_sessao(app, tmp_path):
+    from controle.calibracao import Sessao
+    from controle.poses import Pose
+    j, p, _ = janela_com_perfil(app, tmp_path)
+    relogio = [0.0]
+    j.menu.botao_calibrar.click()
+    assert j.sessao is not None and not p.executor.ativo and "pausar" in p.chamadas
+    j.close()
+
+
+def test_sessao_conclui_mostra_resultado_e_aplicar_salva_no_perfil(app, tmp_path):
+    import json
+    from controle.calibracao import Sessao
+    from controle.poses import Pose
+    j, p, perfil = janela_com_perfil(app, tmp_path)
+    relogio = [0.0]
+    j.iniciar_calibracao(sessao=Sessao(passos=(Pose.ABERTA,), preparo_s=0.2, captura_s=2.4, descarte_s=0.1),
+                         relogio=lambda: relogio[0])
+    feed_calibracao(j, relogio, 0.0, 3.5)
+    assert j.sessao.concluida and j.dialogo_calibracao.botao_aplicar.isEnabled()
+    j.dialogo_calibracao.botao_aplicar.click()
+    assert perfil.calibrado and p.executor.ativo and j.sessao is None
+    assert json.loads((tmp_path / "perfil.json").read_text())["calibrado"] is True
+    j.close()
+
+
+def test_descartar_nao_muda_o_perfil_e_devolve_o_estado(app, tmp_path):
+    from controle.calibracao import Sessao
+    from controle.poses import Pose
+    j, p, perfil = janela_com_perfil(app, tmp_path)
+    relogio = [0.0]
+    j.iniciar_calibracao(sessao=Sessao(passos=(Pose.ABERTA,), preparo_s=0.2, captura_s=2.4, descarte_s=0.1),
+                         relogio=lambda: relogio[0])
+    feed_calibracao(j, relogio, 0.0, 1.0)
+    j.dialogo_calibracao.botao_cancelar.click()
+    assert not perfil.calibrado and perfil.limites == {} and p.executor.ativo and j.sessao is None
+    j.close()
+
+
+def test_cancelar_nao_reativa_gestos_que_ja_estavam_pausados(app, tmp_path):
+    j, p, _ = janela_com_perfil(app, tmp_path)
+    j.botao_pausa.click()                       # a pessoa já tinha pausado
+    j.menu.botao_calibrar.click()
+    j.dialogo_calibracao.botao_cancelar.click()
+    assert not p.executor.ativo
+    j.close()
+
+
+def test_primeiro_uso_oferece_calibrar_so_quando_pedido_e_ainda_nao_calibrado(app, tmp_path):
+    from controle.perfil import Perfil
+    perguntas = []
+    j = JanelaPrincipal(PipelineFalso(), pasta_gravacoes=tmp_path, perfil=Perfil(),
+                        caminho_perfil=tmp_path / "perfil.json", perguntar=lambda *a: perguntas.append(a) or False)
+    j.oferecer_calibracao()
+    assert len(perguntas) == 1
+    j.close()
+    j2 = JanelaPrincipal(PipelineFalso(), pasta_gravacoes=tmp_path, perfil=Perfil(calibrado=True),
+                         caminho_perfil=tmp_path / "perfil.json", perguntar=lambda *a: perguntas.append(a) or False)
+    j2.oferecer_calibracao()
+    assert len(perguntas) == 1                 # já calibrado: não pergunta de novo
+    j2.close()

@@ -6,15 +6,27 @@ bem quanto os padrões e se ficar dentro de faixas seguras (mão de outra pessoa
 inutilizar o programa).
 """
 import dataclasses
+from enum import Enum
 from dataclasses import dataclass, field
 
 import numpy as np
 
 from controle.geometria import Medidas
+from controle.idioma import tr
 from controle.poses import LIMITES_PADRAO, Limites, Pose, classificar
 
 PASSOS = (Pose.ABERTA, Pose.PUNHO, Pose.INDICADOR, Pose.DOIS_DEDOS, Pose.TRES_DEDOS, Pose.PINCA, Pose.L)
+INSTRUCOES = {
+    Pose.ABERTA: "Mão aberta, dedos afastados, palma para a câmera.",
+    Pose.PUNHO: "Mão fechada em punho.",
+    Pose.INDICADOR: "Só o indicador esticado, como se apontasse.",
+    Pose.DOIS_DEDOS: "Indicador e médio esticados (um V); os outros dobrados.",
+    Pose.TRES_DEDOS: "Indicador, médio e anelar esticados; mindinho e polegar dobrados.",
+    Pose.PINCA: "Pinça: ponta do polegar encostada na ponta do indicador; os outros dedos dobrados.",
+    Pose.L: "Indicador esticado e polegar bem aberto, formando um L; os outros dobrados.",
+}
 MINIMO_AMOSTRAS = 15
+ACURACIA_MINIMA = 0.8  # os limiares novos precisam classificar ao menos isso das poses gravadas
 FOLGA = 0.03
 FAIXAS = {  # (mínimo, máximo) de cada limiar ajustável
     "esticado": (0.74, 0.92), "dobrado": (0.53, 0.75), "aberta_minimo": (0.60, 0.85),
@@ -72,7 +84,8 @@ def _propor(amostras: dict[Pose, list[Medidas]], avisos: list[str]) -> dict[str,
     p = {}
     suficientes = {pose for pose, lista in amostras.items() if len(lista) >= MINIMO_AMOSTRAS}
     for pose in amostras.keys() - suficientes:
-        avisos.append(f"{pose.value}: só {len(amostras[pose])} amostras (mínimo {MINIMO_AMOSTRAS}); ignorada")
+        avisos.append(tr("{pose}: só {n} amostras (mínimo {minimo}); ignorada", pose=tr(pose.value),
+                         n=len(amostras[pose]), minimo=MINIMO_AMOSTRAS))
     ok = {pose: amostras[pose] for pose in suficientes}
 
     esticados = np.concatenate([
@@ -90,7 +103,7 @@ def _propor(amostras: dict[Pose, list[Medidas]], avisos: list[str]) -> dict[str,
         if dobrado + 0.05 <= esticado:
             p["esticado"], p["dobrado"] = _limitar("esticado", esticado), _limitar("dobrado", dobrado)
         else:
-            avisos.append("dedos esticados e dobrados se confundem; limiares de dedo mantidos")
+            avisos.append(tr("dedos esticados e dobrados se confundem; limiares de dedo mantidos"))
 
     aberta = _serie(ok, [Pose.ABERTA], "IMAP")
     if len(aberta):
@@ -103,7 +116,7 @@ def _propor(amostras: dict[Pose, list[Medidas]], avisos: list[str]) -> dict[str,
         if a + 0.04 < b:
             p["minimo_tres_dedos"] = _limitar("minimo_tres_dedos", (a + b) / 2)
         else:
-            avisos.append("mindinho de três dedos e de mão aberta se confundem; limiar mantido")
+            avisos.append(tr("mindinho de três dedos e de mão aberta se confundem; limiar mantido"))
 
     if Pose.L in ok and Pose.INDICADOR in ok:
         a = np.percentile([m.angulo_polegar for m in ok[Pose.INDICADOR]], 90)
@@ -111,7 +124,7 @@ def _propor(amostras: dict[Pose, list[Medidas]], avisos: list[str]) -> dict[str,
         if a + 6 < b:
             p["l_angulo_min"] = _limitar("l_angulo_min", (a + b) / 2)
         else:
-            avisos.append("polegar apontando e em L se confundem; ângulo mantido")
+            avisos.append(tr("polegar apontando e em L se confundem; ângulo mantido"))
 
     if Pose.PINCA in ok:
         p["pinca_max"] = _limitar("pinca_max", np.percentile([m.pinca for m in ok[Pose.PINCA]], 90) + 0.05)
@@ -124,9 +137,84 @@ def calcular(amostras: dict[Pose, list[Medidas]], base: Limites = LIMITES_PADRAO
     antes, por_antes = _acuracia(amostras, base)
     candidato = dataclasses.replace(base, **proposta)
     depois, por_depois = _acuracia(amostras, candidato)
-    if depois < antes:
-        avisos.append("os limiares novos acertariam menos que os padrões; mantidos os padrões")
+    if depois < antes or depois < ACURACIA_MINIMA:
+        avisos.append(tr("não consegui separar bem as suas poses (ou os limiares novos acertariam menos que os "
+                         "padrões); mantidos os padrões. Repita a calibração com calma."))
         candidato, proposta, depois, por_depois = base, {}, antes, por_antes
     ajustados = {k: v for k, v in proposta.items() if v != getattr(base, k)}
     return Resultado(limites=candidato, ajustados=ajustados, acuracia_antes=antes, acuracia_depois=depois,
                      por_pose={p: (por_antes[p], por_depois[p]) for p in por_antes}, avisos=avisos)
+
+
+class Fase(Enum):
+    PREPARAR = "preparar"   # a pessoa se posiciona; nada é coletado
+    GRAVAR = "gravar"
+    FIM = "fim"
+
+
+MAX_TENTATIVAS = 2
+EPS = 1e-9
+
+
+class Sessao:
+    """Conduz a pessoa pelas poses, uma por vez: prepara, grava, e repete o passo se faltou amostra.
+
+    O tempo vem de fora (`atualizar(agora, ...)`), então a mesma lógica serve à interface e aos testes.
+    """
+
+    def __init__(self, passos=PASSOS, preparo_s: float = 2.5, captura_s: float = 3.0, descarte_s: float = 0.6):
+        self.passos, self.preparo_s, self.captura_s, self.descarte_s = tuple(passos), preparo_s, captura_s, descarte_s
+        self.coletor = Coletor()
+        self.indice = 0
+        self.tentativa = 1
+        self.fase = Fase.PREPARAR
+        self.progresso = 0.0
+        self._inicio: float | None = None
+        self._cancelada = False
+
+    @property
+    def concluida(self) -> bool:
+        return self._cancelada or self.indice >= len(self.passos)
+
+    @property
+    def pose_atual(self) -> Pose | None:
+        return None if self.concluida else self.passos[self.indice]
+
+    def cancelar(self):
+        self._cancelada = True
+        self.fase = Fase.FIM
+
+    def atualizar(self, agora: float, medidas: list[Medidas]):
+        if self.concluida:
+            return
+        if self._inicio is None:
+            self._inicio = agora
+            if self.fase is Fase.GRAVAR:
+                self.coletor.iniciar(self.pose_atual)
+        decorrido = agora - self._inicio
+        if self.fase is Fase.PREPARAR:
+            self.progresso = min(decorrido / self.preparo_s, 1.0)
+            if decorrido + EPS >= self.preparo_s:
+                self.fase, self._inicio, self.progresso = Fase.GRAVAR, agora, 0.0
+                self.coletor.iniciar(self.pose_atual)
+            return
+        self.progresso = min(decorrido / self.captura_s, 1.0)
+        if decorrido + EPS >= self.descarte_s and medidas:
+            self.coletor.adicionar(max(medidas, key=lambda m: m.tamanho))
+        if decorrido + EPS >= self.captura_s:
+            self._terminar_passo()
+
+    def _terminar_passo(self):
+        pose = self.pose_atual
+        faltou = self.coletor.quantidade(pose) < MINIMO_AMOSTRAS
+        if faltou and self.tentativa < MAX_TENTATIVAS:
+            self.coletor.amostras[pose] = []
+            self.tentativa += 1
+        else:
+            self.indice += 1
+            self.tentativa = 1
+        self.fase = Fase.FIM if self.concluida else Fase.PREPARAR
+        self._inicio, self.progresso = None, 0.0
+
+    def resultado(self) -> Resultado:
+        return calcular(self.coletor.amostras)

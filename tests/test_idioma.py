@@ -5,6 +5,7 @@ import pytest
 
 from controle import idioma
 from controle.interface import POSE_TEXTO
+from controle.calibracao import INSTRUCOES
 from controle.legenda import GESTOS
 from controle.poses import Pose
 
@@ -57,11 +58,12 @@ def test_todo_texto_marcado_com_tr_tem_traducao():
 def test_tabela_em_ingles_nao_tem_entrada_sobrando():
     # entradas fora do código e fora do catálogo de gestos/poses são lixo que acumula
     usadas = _textos_traduzidos() | {t for g in GESTOS for t in (g.nome, g.como, g.acao)} \
-        | {p.value for p in Pose} | set(POSE_TEXTO.values()) | idioma.TEXTOS_DINAMICOS
+        | {p.value for p in Pose} | set(POSE_TEXTO.values()) | set(INSTRUCOES.values()) | idioma.TEXTOS_DINAMICOS
     sobram = sorted(t for t in idioma.EN if t not in usadas)
     assert sobram == []
 
 
 def test_catalogo_de_gestos_e_poses_esta_traduzido():
-    textos = [t for g in GESTOS for t in (g.nome, g.como, g.acao)] + [p.value for p in Pose] + list(POSE_TEXTO.values())
+    textos = [t for g in GESTOS for t in (g.nome, g.como, g.acao)] + [p.value for p in Pose] + list(POSE_TEXTO.values()) \
+        + list(INSTRUCOES.values())
     assert [t for t in textos if t not in idioma.EN and t not in idioma.IGUAIS] == []

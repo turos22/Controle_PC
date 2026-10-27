@@ -179,9 +179,9 @@ Fase 1:
       que houver).
 - [x] **M6 — Perfil por usuário**: limites de pose e de gesto saem das constantes para um perfil
       salvo (JSON); valores atuais viram o padrão.
-- [ ] **M7 — Assistente de calibração**: grava cada gesto, ajusta os limites pela distribuição das
+- [x] **M7 — Assistente de calibração**: grava cada gesto, ajusta os limites pela distribuição das
       medidas (mesmas análises feitas à mão), confirma com a pessoa e salva no perfil.
-- [ ] **M8 — Português e inglês** na interface e na legenda.
+- [x] **M8 — Português e inglês** na interface e na legenda.
 - [ ] **M9 — Instalação**: `pyproject.toml` com dependências por sistema e comando
       `controle-por-gestos`; README em PT e EN com instruções por sistema.
 - [ ] **M10 — Verificação no Windows** com o Arthur (guia de testes por sistema).
@@ -225,3 +225,19 @@ Fase 2:
 - O menu lembra velocidade, suavização, rolagem, zoom, caixas e gestos desligados entre sessões; falha ao
   gravar não impede de fechar.
 - Verificado ao vivo no KDE: abre com o perfil, câmera a 30 fps, 10 s sem erro.
+
+### 2026-10-27 — M7 e M8 fechadas (361 testes passando)
+- `calibracao.py`: `Sessao` conduz sete poses (prepara 2,5 s, descarta 0,6 s, grava 3 s; repete o passo se
+  faltarem amostras, até 2 vezes) e `calcular()` posiciona `esticado`, `dobrado`, `aberta_minimo`,
+  `minimo_tres_dedos`, `l_angulo_min` e `pinca_max` entre as faixas medidas da própria pessoa, com folga.
+  Guardas: faixas seguras por limiar; ≥ 15 amostras por pose; só vale se acertar ≥ 80 % das poses gravadas
+  **e** não pior que os padrões (poses erradas ou dados sobrepostos mantêm os padrões e avisam).
+  Visto na prática: sem a guarda de 80 %, uma pose errada "calibrava" para 0 % → 0 %.
+- Interface: botão "Calibrar meus gestos", diálogo com passo, instrução, barra e antes/depois; pausa os
+  gestos durante e restaura o estado anterior; aplicar vale já no próximo quadro e salva no perfil;
+  oferta no primeiro uso (`perfil.calibrado`).
+- `idioma.py`: `tr()` com o português como chave e tabela em inglês; testes exigem tradução para todo
+  texto marcado e proíbem entrada sobrando. Idioma = perfil, senão o do sistema.
+- Verificado: suíte; renderização offscreen do diálogo e da janela em inglês; programa abre ao vivo no KDE
+  com configuração limpa. **Não verificado**: a calibração com a mão real (a limitação dos limiares é a
+  própria distribuição das poses; precisa de uma pessoa executando o assistente).

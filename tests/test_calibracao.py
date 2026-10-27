@@ -102,3 +102,86 @@ def test_coletor_ignora_mao_na_borda_e_conta_por_pose():
     c.adicionar(medida(0.5, 0.5, 0.5, 0.5))
     assert {p: len(l) for p, l in c.amostras.items()} == {Pose.ABERTA: 1, Pose.PUNHO: 1}
     assert c.quantidade(Pose.ABERTA) == 1
+
+
+# ---------- sessão guiada ----------
+
+from controle.calibracao import Fase, Sessao  # noqa: E402
+
+
+def sessao_guiada(**kw):
+    return Sessao(passos=(Pose.ABERTA, Pose.PUNHO), preparo_s=2.0, captura_s=3.0, descarte_s=0.5, **kw)
+
+
+def alimentar(s, de, ate, passo=0.1, mao=None):
+    """Quadros a cada `passo` s em [de, ate); o tempo vem de inteiros para não acumular erro de ponto flutuante."""
+    for i in range(round(de / passo), round(ate / passo)):
+        s.atualizar(i * passo, [mao] if mao is not None else [])
+    return ate
+
+
+def test_sessao_comeca_preparando_o_primeiro_passo():
+    s = sessao_guiada()
+    s.atualizar(0.0, [])
+    assert s.pose_atual is Pose.ABERTA and s.fase is Fase.PREPARAR and not s.concluida
+
+
+def test_nada_e_coletado_no_preparo_nem_no_descarte():
+    s = sessao_guiada()
+    alimentar(s, 0.0, 2.45, mao=medida(0.9, 0.9, 0.9, 0.9))   # preparo (2 s) + 0,45 s de descarte
+    assert s.fase is Fase.GRAVAR and s.coletor.quantidade(Pose.ABERTA) == 0
+
+
+def test_depois_do_descarte_coleta_e_ao_fim_passa_ao_proximo():
+    s = sessao_guiada()
+    alimentar(s, 0.0, 5.1, mao=medida(0.9, 0.9, 0.9, 0.9))
+    assert s.coletor.quantidade(Pose.ABERTA) >= MINIMO_AMOSTRAS
+    assert s.pose_atual is Pose.PUNHO and s.fase is Fase.PREPARAR
+
+
+def test_passo_sem_amostras_suficientes_repete_e_depois_desiste():
+    s = sessao_guiada()
+    alimentar(s, 0.0, 5.1)                       # ninguém na frente da câmera
+    assert s.pose_atual is Pose.ABERTA and s.fase is Fase.PREPARAR and s.tentativa == 2
+    alimentar(s, 5.1, 12.0)
+    assert s.pose_atual is Pose.PUNHO and s.tentativa == 1   # desistiu da primeira após as tentativas
+
+
+def test_progresso_vai_de_zero_a_um_dentro_da_fase():
+    s = sessao_guiada()
+    s.atualizar(0.0, [])
+    s.atualizar(1.0, [])
+    assert 0.45 < s.progresso < 0.55
+
+
+def test_com_duas_maos_vale_a_maior():
+    import dataclasses
+    s = sessao_guiada()
+    pequena = medida(0.1, 0.1, 0.1, 0.1)
+    grande = dataclasses.replace(medida(0.9, 0.9, 0.9, 0.9), tamanho=0.5)
+    s.atualizar(0.0, [])
+    s.atualizar(2.0, [])
+    s.atualizar(2.6, [pequena, grande])
+    assert s.coletor.amostras[Pose.ABERTA][0].tamanho == 0.5
+
+
+def test_sessao_completa_gera_resultado_e_cancelar_interrompe():
+    s = Sessao(preparo_s=0.2, captura_s=2.4, descarte_s=0.1)
+    amostras = sessao(rigido=True)
+    i = 0
+    while not s.concluida:
+        pose = s.pose_atual
+        s.atualizar(i * 0.1, [amostras[pose][i % len(amostras[pose])]])
+        i += 1
+    assert s.resultado().acuracia_depois > 0.9
+    c = sessao_guiada()
+    c.cancelar()
+    assert c.concluida
+
+
+def test_amostras_que_nao_combinam_com_a_pose_pedida_nao_mudam_os_limites():
+    # a pessoa fez outra coisa: mão fechada gravada como "mão aberta"; ajustar em cima disso estragaria
+    errado = {Pose.ABERTA: amostras_de(Pose.ABERTA, (0.4, 0.4, 0.4, 0.4))}
+    r = calcular(errado)
+    assert r.limites == LIMITES_PADRAO and r.ajustados == {}
+    assert r.acuracia_depois < 0.8 and any("poses" in a for a in r.avisos)

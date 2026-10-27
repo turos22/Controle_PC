@@ -113,3 +113,12 @@ def test_pasta_no_macos_usa_application_support():
 
 def test_sem_idioma_no_perfil_fica_para_o_idioma_do_sistema():
     assert Perfil().idioma is None
+
+
+def test_calibrado_e_lembrado_e_valida_tipo(tmp_path):
+    caminho = tmp_path / "perfil.json"
+    Perfil(calibrado=True).salvar(caminho)
+    assert Perfil.carregar(caminho).calibrado is True
+    caminho.write_text(json.dumps({"calibrado": "sim"}))
+    p = Perfil.carregar(caminho)
+    assert p.calibrado is False and p.avisos
