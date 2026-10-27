@@ -193,3 +193,33 @@ Decisões (sobrepõem as anteriores):
 - **Zoom = duas pinças** ao mesmo tempo (o C continua aceito).
 - **Gravação de sessão** no programa: o Arthur grava cada gesto na posição real da câmera; as
   gravações viram fixtures de calibração e de teste (os vídeos do OBS tinham outro enquadramento).
+
+## Iteração 3 — multiplataforma (decisões de 2026-10-27)
+
+Objetivo: outras pessoas usarem o programa em Windows, macOS e Linux.
+
+Decisões do Arthur:
+- **Distribuição em duas fases**: fase 1 = o mesmo código roda nos três sistemas, instalado com
+  Python (`pip`); fase 2 = instaladores prontos (.exe, .dmg, AppImage).
+- **Assistente de calibração no primeiro uso**: a pessoa faz cada gesto algumas vezes e o programa
+  ajusta os limites à mão dela (o que foi feito à mão com as gravações do Arthur, automatizado),
+  salvos num perfil por usuário.
+- **Teste real só em Windows** (além do Linux daqui). macOS fica com código pronto e testes
+  simulados, **sem verificação real** até alguém rodar.
+- **Interface em português e inglês**, pelo idioma do sistema, com troca no menu. Código continua
+  em português.
+- Linux além do KDE (padrão técnico, não perguntado): GNOME e X11 com ações por atalho de teclado.
+
+O que muda por sistema:
+
+| Camada | Linux | Windows | macOS |
+|---|---|---|---|
+| Mouse e teclado | uinput (já existe) | SendInput (ctypes, sem dependência) | Quartz CGEvent (pyobjc); exige permissão de Acessibilidade |
+| Ações de janela | KDE: KWin D-Bus; GNOME/X11: atalhos | atalhos: Win+↑, Win+Tab, Ctrl+Win+←/→, Alt+Tab, Alt+F4 | atalhos: Mission Control (Ctrl+↑), Ctrl+←/→, Cmd+Tab, Cmd+W; maximizar = tela cheia |
+| Zoom | Ctrl + roda | Ctrl + roda | Cmd + "=" / "-" |
+| Câmera (OpenCV) | V4L2 | MSMF/DirectShow | AVFoundation; exige permissão de câmera |
+| Telas | Qt | Qt (cuidar da escala de DPI) | Qt (pontos lógicos) |
+
+Riscos a verificar: wheels do MediaPipe para Python 3.13 em Windows/macOS (talvez exigir 3.12);
+mapeamento do ponteiro absoluto com escala de DPI no Windows; Cmd+Tab no macOS troca de app, não de
+janela; resolução/campo de visão de cada câmera (o 1280x720 foi escolhido para a câmera do Arthur).

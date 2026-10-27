@@ -162,3 +162,29 @@ tests/
   (o "apontar" dele às vezes fica a 45–52°, que conta como L) maximizava a janela.
 - **Validado ao vivo pelo Arthur em 2026-10-26** ("funcionando"): zoom aplicando e clique direito.
   I11 fechada. Pendente: commit (nada versionado ainda).
+
+## Iteração 3 — multiplataforma (spec: seção "Iteração 3")
+
+`/security-review` da branch `gestos-iteracao-2` (2026-10-27): **nenhum achado** (subprocess só com
+argv fixo, sem desserialização insegura, sem rede, gravações com nomes fixos).
+
+Fase 1:
+- [ ] **M1 — Camada de plataforma**: separar entrada (mouse/teclado) de ações de janela;
+      detectar sistema e ambiente; KDE atual vira um backend. Sem mudar comportamento no Linux.
+- [ ] **M2 — Linux GNOME/X11**: ações por atalhos de teclado via uinput.
+- [ ] **M3 — Windows**: SendInput, atalhos do Windows, câmera MSMF/DirectShow, escala de DPI.
+- [ ] **M4 — macOS**: Quartz (pyobjc), atalhos do macOS, câmera AVFoundation, aviso de
+      permissões. Sem verificação real.
+- [ ] **M5 — Câmera**: escolher backend e resolução por câmera (tenta 1280x720@30 e cai para o
+      que houver).
+- [ ] **M6 — Perfil por usuário**: limites de pose e de gesto saem das constantes para um perfil
+      salvo (JSON); valores atuais viram o padrão.
+- [ ] **M7 — Assistente de calibração**: grava cada gesto, ajusta os limites pela distribuição das
+      medidas (mesmas análises feitas à mão), confirma com a pessoa e salva no perfil.
+- [ ] **M8 — Português e inglês** na interface e na legenda.
+- [ ] **M9 — Instalação**: `pyproject.toml` com dependências por sistema e comando
+      `controle-por-gestos`; README em PT e EN com instruções por sistema.
+- [ ] **M10 — Verificação no Windows** com o Arthur (guia de testes por sistema).
+
+Fase 2:
+- [ ] **M11 — Instaladores** (.exe, .dmg, AppImage).
