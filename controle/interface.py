@@ -218,8 +218,12 @@ class ControleDeslizante(QWidget):
 
 
 class PainelMenu(QScrollArea):
+    DESLIZANTES = ("zoom", "velocidade", "suavizacao", "regiao", "rolagem")
+    CAIXAS = ("cursor_relativo", "inverter_rolagem", "espelhar", "landmarks", "mostrar_regiao")
+
     def __init__(self, ao_mudar):
         super().__init__()
+        self._silencio = False  # ao carregar o perfil, a janela ainda não existe por inteiro
         self.setWidgetResizable(True)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setFixedWidth(270)
@@ -303,7 +307,32 @@ class PainelMenu(QScrollArea):
                       self.rolagem.valueChanged, self.velocidade.valueChanged, self.cursor_relativo.toggled,
                       self.inverter_rolagem.toggled, self.espelhar.toggled, self.landmarks.toggled,
                       self.mostrar_regiao.toggled, *(c.toggled for c in self.caixas_gestos.values())):
-            sinal.connect(lambda *_: ao_mudar())
+            sinal.connect(lambda *_: None if self._silencio else ao_mudar())
+
+    def ajustes(self) -> dict:
+        """Estado do menu, para o perfil."""
+        dados = {nome: getattr(self, nome).value() for nome in self.DESLIZANTES}
+        dados |= {nome: getattr(self, nome).isChecked() for nome in self.CAIXAS}
+        dados["gestos_desligados"] = [g for g, c in self.caixas_gestos.items() if not c.isChecked()]
+        return dados
+
+    def aplicar_ajustes(self, dados: dict):
+        """Aplica o que vier do perfil; valor de tipo errado é ignorado e o deslizante limita ao seu intervalo."""
+        self._silencio = True
+        try:
+            for nome in self.DESLIZANTES:
+                valor = dados.get(nome)
+                if isinstance(valor, int | float) and not isinstance(valor, bool) and valor == valor:
+                    getattr(self, nome).setValue(int(max(-10**6, min(10**6, valor))))
+            for nome in self.CAIXAS:
+                if isinstance(dados.get(nome), bool):
+                    getattr(self, nome).setChecked(dados[nome])
+            desligados = dados.get("gestos_desligados")
+            if isinstance(desligados, list):
+                for gesto, caixa in self.caixas_gestos.items():
+                    caixa.setChecked(gesto not in desligados)
+        finally:
+            self._silencio = False
 
 
 class ItemLegenda(QFrame):
@@ -386,8 +415,10 @@ class PainelLegenda(QScrollArea):
 
 class JanelaPrincipal(QMainWindow):
     def __init__(self, pipeline, modo_demonstracao: bool = False, aviso: str | None = None,
-                 pasta_gravacoes: pathlib.Path = PASTA_GRAVACOES):
+                 pasta_gravacoes: pathlib.Path = PASTA_GRAVACOES, perfil=None,
+                 caminho_perfil: pathlib.Path | None = None):
         super().__init__()
+        self.perfil, self.caminho_perfil = perfil, caminho_perfil
         self.pipeline = pipeline
         self.pasta_gravacoes = pasta_gravacoes
         self.executor = pipeline.executor
@@ -421,6 +452,8 @@ class JanelaPrincipal(QMainWindow):
             rotulo.setMaximumWidth(270)
             esquerda.addWidget(rotulo)
         self.menu = PainelMenu(self._aplicar_menu)
+        if perfil is not None:
+            self.menu.aplicar_ajustes(perfil.ajustes)
         self.menu.botao_gravar.clicked.connect(self.alternar_gravacao)
         esquerda.addWidget(self.menu, 1)
         linhas.addLayout(esquerda)
@@ -534,6 +567,16 @@ class JanelaPrincipal(QMainWindow):
     def texto_status(self) -> str:
         return self._status.text()
 
+    def _salvar_perfil(self):
+        if self.perfil is None or self.caminho_perfil is None:
+            return
+        self.perfil.ajustes = self.menu.ajustes()
+        try:
+            self.perfil.salvar(self.caminho_perfil)
+        except OSError as erro:  # disco cheio ou pasta sem escrita: sair importa mais que lembrar
+            print(f"Não consegui salvar o perfil em {self.caminho_perfil}: {erro}")
+
     def closeEvent(self, evento):
+        self._salvar_perfil()
         self.pipeline.parar()
         super().closeEvent(evento)

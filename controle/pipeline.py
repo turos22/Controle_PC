@@ -13,6 +13,7 @@ from mediapipe.tasks.python import vision
 from controle.gestos import Parametros
 from controle.imagem import aplicar_zoom
 from controle.maos import Mao, Quadro
+from controle.poses import LIMITES_PADRAO, Limites
 from controle.reconhecedor import EstadoMao, Reconhecedor
 from controle.saida import Executor
 
@@ -48,10 +49,10 @@ class Resultado:
 class Pipeline:
     def __init__(self, camera, executor: Executor, config: Config,
                  ao_resultado: Callable[[Resultado], None], params: Parametros | None = None,
-                 modelo: pathlib.Path = MODELO):
+                 modelo: pathlib.Path = MODELO, limites: Limites = LIMITES_PADRAO):
         self.camera, self.executor, self.config = camera, executor, config
         self.ao_resultado = ao_resultado
-        self.reconhecedor = Reconhecedor(params)
+        self.reconhecedor = Reconhecedor(params, limites=limites)
         self.modelo = modelo
         self.gravador = None  # Gravador ativo, ou None (definido pela interface)
         self._trava = threading.Lock()

@@ -12,6 +12,7 @@ from PySide6.QtWidgets import QApplication, QMessageBox  # noqa: E402
 from controle.captura import Camera  # noqa: E402
 from controle.cursor import Cursor, Retangulo  # noqa: E402
 from controle.interface import JanelaPrincipal  # noqa: E402
+from controle.perfil import Perfil, pasta_de_configuracao  # noqa: E402
 from controle.pipeline import Config, Pipeline  # noqa: E402
 from controle.plataforma import criar_saida, detectar  # noqa: E402
 from controle.saida import Executor  # noqa: E402
@@ -22,13 +23,13 @@ def telas_do_qt(app: QApplication) -> list[Retangulo]:
     return [Retangulo(g.x(), g.y(), g.width(), g.height()) for g in (s.geometry() for s in app.screens())]
 
 
-def indice_da_camera(argv: list[str]) -> int:
-    """`--camera N` ou `--camera=N`; qualquer outra coisa vale a primeira câmera."""
+def indice_da_camera(argv: list[str], padrao: int = 0) -> int:
+    """`--camera N` ou `--camera=N`; sem o argumento vale o `padrao` (a câmera do perfil)."""
     for i, a in enumerate(argv):
         valor = a.split("=", 1)[1] if a.startswith("--camera=") else (argv[i + 1] if a == "--camera" and i + 1 < len(argv) else None)
         if valor is not None and valor.isdigit():
             return int(valor)
-    return 0
+    return padrao
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -43,7 +44,11 @@ def main(argv: list[str] | None = None) -> int:
     saida = criar_saida(ambiente, demonstracao)
     print(f"Sistema: {ambiente.sistema} {ambiente.area_de_trabalho or ''} {ambiente.sessao or ''}".rstrip())
 
-    camera = Camera(indice_da_camera(argv))
+    caminho_perfil = pasta_de_configuracao(ambiente.sistema) / "perfil.json"
+    perfil = Perfil.carregar(caminho_perfil)
+    for aviso in perfil.avisos:
+        print(aviso)
+    camera = Camera(indice_da_camera(argv, perfil.camera))
     try:
         camera.iniciar()
     except RuntimeError as erro:
@@ -53,8 +58,10 @@ def main(argv: list[str] | None = None) -> int:
 
     executor = Executor(saida.entrada, saida.acoes, Cursor(telas))
     janela: JanelaPrincipal | None = None
-    pipeline = Pipeline(camera, executor, Config(), ao_resultado=lambda r: janela.ponte.resultado.emit(r))
-    janela = JanelaPrincipal(pipeline, modo_demonstracao=saida.demonstracao, aviso=saida.aviso)
+    pipeline = Pipeline(camera, executor, Config(), ao_resultado=lambda r: janela.ponte.resultado.emit(r),
+                        params=perfil.parametros_efetivos(), limites=perfil.limites_efetivos())
+    janela = JanelaPrincipal(pipeline, modo_demonstracao=saida.demonstracao, aviso=saida.aviso,
+                             perfil=perfil, caminho_perfil=caminho_perfil)
     thread = threading.Thread(target=pipeline.rodar, name="pipeline", daemon=True)
     thread.start()
     janela.show()

@@ -177,7 +177,7 @@ Fase 1:
       permissões. Sem verificação real.
 - [x] **M5 — Câmera**: escolher backend e resolução por câmera (tenta 1280x720@30 e cai para o
       que houver).
-- [ ] **M6 — Perfil por usuário**: limites de pose e de gesto saem das constantes para um perfil
+- [x] **M6 — Perfil por usuário**: limites de pose e de gesto saem das constantes para um perfil
       salvo (JSON); valores atuais viram o padrão.
 - [ ] **M7 — Assistente de calibração**: grava cada gesto, ajusta os limites pela distribuição das
       medidas (mesmas análises feitas à mão), confirma com a pessoa e salva no perfil.
@@ -214,3 +214,14 @@ Fase 2:
   libera o que não abriu; `--camera N` escolhe a câmera.
 - **Não verificado**: Windows/macOS/GNOME reais. Atalhos do GNOME e do macOS são os padrões de fábrica;
   quem mudou os atalhos precisa ajustar `atalhos.py`.
+
+### 2026-10-27 — M6 fechada (328 testes passando)
+- `poses.Limites` (dataclass com os valores calibrados) substitui as constantes; `classificar(m, limites)`.
+  `Parametros` (gestos) já era dataclass. `Reconhecedor` e `Pipeline` recebem os dois.
+- `controle/perfil.py`: `Perfil` (sobrescritas de limites e parâmetros, ajustes do menu, idioma, câmera)
+  em JSON na pasta de configuração do sistema (XDG, %APPDATA%, Application Support). Carregamento
+  tolerante: arquivo corrompido, chave desconhecida, tipo errado, NaN ou negativo → descartado com aviso.
+  Gravação atômica (arquivo temporário + troca).
+- O menu lembra velocidade, suavização, rolagem, zoom, caixas e gestos desligados entre sessões; falha ao
+  gravar não impede de fechar.
+- Verificado ao vivo no KDE: abre com o perfil, câmera a 30 fps, 10 s sem erro.

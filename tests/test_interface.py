@@ -146,3 +146,55 @@ def test_indice_da_camera_vem_do_argumento():
     assert indice_da_camera(["prog", "--camera", "2"]) == 2
     assert indice_da_camera(["prog", "--camera=1"]) == 1
     assert indice_da_camera(["prog", "--camera", "x"]) == 0
+    assert indice_da_camera(["prog"], padrao=3) == 3 and indice_da_camera(["prog", "--camera=1"], padrao=3) == 1
+
+
+# ---------- perfil: o menu lembra os ajustes entre sessões ----------
+
+def test_ajustes_do_perfil_valem_ao_abrir(app, tmp_path):
+    from controle.perfil import Perfil
+    p = PipelineFalso()
+    perfil = Perfil(ajustes={"velocidade": 150, "inverter_rolagem": True, "rolagem": 200,
+                             "gestos_desligados": ["zoom"]})
+    j = JanelaPrincipal(p, pasta_gravacoes=tmp_path, perfil=perfil, caminho_perfil=tmp_path / "perfil.json")
+    assert p.executor.cursor.velocidade == 1.5 and p.executor.inverter_rolagem
+    assert p.executor.ganho_rolagem == 2.0 and "zoom" not in p.executor.habilitados
+    j.close()
+
+
+def test_ajustes_invalidos_do_perfil_nao_derrubam_a_janela(app, tmp_path):
+    from controle.perfil import Perfil
+    p = PipelineFalso()
+    perfil = Perfil(ajustes={"velocidade": "muito", "rolagem": 99999, "gestos_desligados": "zoom", "x": 1})
+    j = JanelaPrincipal(p, pasta_gravacoes=tmp_path, perfil=perfil, caminho_perfil=tmp_path / "perfil.json")
+    assert 25 <= j.menu.velocidade.value() <= 400 and j.menu.rolagem.value() <= 300
+    j.close()
+
+
+def test_fechar_a_janela_salva_os_ajustes_no_perfil(app, tmp_path):
+    import json
+    from controle.perfil import Perfil
+    caminho = tmp_path / "perfil.json"
+    p = PipelineFalso()
+    j = JanelaPrincipal(p, pasta_gravacoes=tmp_path, perfil=Perfil(), caminho_perfil=caminho)
+    j.menu.velocidade.setValue(220)
+    j.menu.inverter_rolagem.setChecked(True)
+    j.close()
+    salvo = json.loads(caminho.read_text())
+    assert salvo["ajustes"]["velocidade"] == 220 and salvo["ajustes"]["inverter_rolagem"] is True
+
+
+def test_sem_caminho_de_perfil_nada_e_gravado(app, tmp_path):
+    p = PipelineFalso()
+    j = JanelaPrincipal(p, pasta_gravacoes=tmp_path)
+    j.close()
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_falha_ao_gravar_o_perfil_nao_impede_de_fechar(app, tmp_path):
+    from controle.perfil import Perfil
+    bloqueio = tmp_path / "arquivo"
+    bloqueio.write_text("x")                       # uma pasta não pode ser criada dentro de um arquivo
+    j = JanelaPrincipal(PipelineFalso(), pasta_gravacoes=tmp_path, perfil=Perfil(),
+                        caminho_perfil=bloqueio / "perfil.json")
+    j.close()

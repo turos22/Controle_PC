@@ -6,7 +6,7 @@ from controle.eventos import Evento, Tipo
 from controle.geometria import Medidas, medir
 from controle.gestos import MaquinaMao, Parametros
 from controle.maos import Quadro
-from controle.poses import Pose, classificar
+from controle.poses import LIMITES_PADRAO, Limites, Pose, classificar
 
 POSES_ZOOM = frozenset({Pose.C, Pose.PINCA})
 LIBERAM_CURSOR = frozenset({Pose.ABERTA, Pose.L, Pose.C})
@@ -117,8 +117,10 @@ class EstadoMao:
 
 
 class Reconhecedor:
-    def __init__(self, params: Parametros | None = None, aspecto: float = 16 / 9):
+    def __init__(self, params: Parametros | None = None, aspecto: float = 16 / 9,
+                 limites: Limites = LIMITES_PADRAO):
         self.params = params or Parametros()
+        self.limites = limites
         self.aspecto = aspecto
         self.rastreador = Rastreador()
         self.zoom = DetectorZoom()
@@ -147,7 +149,7 @@ class Reconhecedor:
             maquina.em_zoom = i in self.zoom.ativo
             # arrastando ou em zoom, nenhum outro gesto começa; depois, cada mão precisa mudar de pose
             maquina.bloqueada = (bool(arrastam) and i not in arrastam) or maquina.em_zoom
-            for e in maquina.atualizar(t, m, classificar(m)):
+            for e in maquina.atualizar(t, m, classificar(m, self.limites)):
                 if e.tipo is Tipo.APONTAR:
                     if self.dono_cursor is None:
                         self.dono_cursor = i
