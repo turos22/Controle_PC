@@ -17,6 +17,15 @@ class Tecla(Enum):
     TAB = "tab"
     CTRL = "ctrl"
     SHIFT = "shift"
+    META = "meta"            # tecla Windows, Super ou Comando
+    CIMA = "cima"
+    ESQUERDA = "esquerda"
+    DIREITA = "direita"
+    PAGE_UP = "page up"
+    PAGE_DOWN = "page down"
+    F4 = "f4"
+    W = "w"
+    F = "f"
 
 
 class Acao(Enum):
@@ -29,7 +38,11 @@ class Acao(Enum):
 
 
 class Entrada(Protocol):
-    """Mouse e teclado do sistema."""
+    """Mouse e teclado do sistema.
+
+    Pode declarar `modificador_troca` (Alt no Windows e no Linux, Comando no macOS) e
+    `modificador_zoom` (Ctrl; Comando no macOS); sem declarar, valem Alt e Ctrl.
+    """
 
     def mover_absoluto(self, u: float, v: float) -> None:
         """Posição em [0, 1] sobre a área que envolve todas as telas."""
@@ -50,6 +63,9 @@ class AcoesJanela(Protocol):
 
 class EntradaNula:
     """Modo demonstração: reconhece e mostra os gestos sem agir no sistema."""
+
+    modificador_troca = Tecla.ALT
+    modificador_zoom = Tecla.CTRL
 
     def mover_absoluto(self, u, v): pass
     def botao(self, botao, pressionado): pass

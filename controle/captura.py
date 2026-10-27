@@ -4,9 +4,23 @@ import time
 
 import cv2
 
+from controle.plataforma import detectar
+
+
+def backends_do_sistema(sistema: str) -> list[int]:
+    """Do mais confiável para o menos; CAP_ANY por último deixa o OpenCV escolher."""
+    return {
+        "linux": [cv2.CAP_V4L2, cv2.CAP_ANY],
+        "windows": [cv2.CAP_MSMF, cv2.CAP_DSHOW, cv2.CAP_ANY],
+        "macos": [cv2.CAP_AVFOUNDATION, cv2.CAP_ANY],
+    }.get(sistema, [cv2.CAP_ANY])
+
 
 class Camera:
-    def __init__(self, indice: int = 0, largura: int = 1280, altura: int = 720, fps: int = 30):
+    def __init__(self, indice: int = 0, largura: int = 1280, altura: int = 720, fps: int = 30,
+                 abrir=None, sistema: str | None = None):
+        self._abrir = abrir or cv2.VideoCapture
+        self._backends = backends_do_sistema(sistema or detectar().sistema)
         # 1280x720 tem o mesmo campo de visão do 1080p nesta câmera e entrega 30 fps (o 1080p, 25)
         self.indice, self.pedido = indice, (largura, altura, fps)
         self.resolucao = (0, 0)
@@ -18,10 +32,16 @@ class Camera:
         self._numero = self._lido = 0
         self._rodando = False
 
-    def iniciar(self):
-        cap = cv2.VideoCapture(self.indice, cv2.CAP_V4L2)
-        if not cap.isOpened():
-            raise RuntimeError(f"não abriu a câmera {self.indice} (outro programa usando, como o OBS?)")
+    def _abrir_melhor(self):
+        """Abre pelo primeiro backend que funciona e pede 720p a 30 fps; o driver devolve o que tiver."""
+        for backend in self._backends:
+            cap = self._abrir(self.indice, backend)
+            if cap.isOpened():
+                break
+            cap.release()
+        else:
+            raise RuntimeError(f"não abriu a câmera {self.indice} (outro programa usando, como o OBS, "
+                               "ou sem permissão de câmera para este programa?)")
         largura, altura, fps = self.pedido
         cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, largura)
@@ -29,7 +49,11 @@ class Camera:
         cap.set(cv2.CAP_PROP_FPS, fps)
         cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
         self.resolucao = (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
-        self._cap, self._rodando = cap, True
+        self._cap = cap
+
+    def iniciar(self):
+        self._abrir_melhor()
+        self._rodando = True
         self._thread = threading.Thread(target=self._laco, name="camera", daemon=True)
         self._thread.start()
 

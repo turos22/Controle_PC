@@ -138,3 +138,11 @@ def test_desenha_anel_de_contagem_do_fechar_sem_erro(janela):
     j.resize(1400, 800)
     j.ao_resultado(Resultado(0, np.zeros((720, 1280, 3), np.uint8), [mao], [estado], [], m))
     assert j.grab().toImage().width() > 0
+
+
+def test_indice_da_camera_vem_do_argumento():
+    from controle.app import indice_da_camera
+    assert indice_da_camera(["prog"]) == 0
+    assert indice_da_camera(["prog", "--camera", "2"]) == 2
+    assert indice_da_camera(["prog", "--camera=1"]) == 1
+    assert indice_da_camera(["prog", "--camera", "x"]) == 0

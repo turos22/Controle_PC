@@ -22,6 +22,15 @@ def telas_do_qt(app: QApplication) -> list[Retangulo]:
     return [Retangulo(g.x(), g.y(), g.width(), g.height()) for g in (s.geometry() for s in app.screens())]
 
 
+def indice_da_camera(argv: list[str]) -> int:
+    """`--camera N` ou `--camera=N`; qualquer outra coisa vale a primeira câmera."""
+    for i, a in enumerate(argv):
+        valor = a.split("=", 1)[1] if a.startswith("--camera=") else (argv[i + 1] if a == "--camera" and i + 1 < len(argv) else None)
+        if valor is not None and valor.isdigit():
+            return int(valor)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv if argv is None else argv
     demonstracao = "--demonstracao" in argv
@@ -34,7 +43,7 @@ def main(argv: list[str] | None = None) -> int:
     saida = criar_saida(ambiente, demonstracao)
     print(f"Sistema: {ambiente.sistema} {ambiente.area_de_trabalho or ''} {ambiente.sessao or ''}".rstrip())
 
-    camera = Camera()
+    camera = Camera(indice_da_camera(argv))
     try:
         camera.iniciar()
     except RuntimeError as erro:

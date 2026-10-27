@@ -21,6 +21,8 @@ SOLTURAS = frozenset({Tipo.SEGURAR_FIM, Tipo.ALT_TAB_FIM, Tipo.ZOOM_FIM})
 class Executor:
     def __init__(self, entrada: Entrada, acoes: AcoesJanela, cursor: Cursor):
         self.entrada, self.acoes, self.cursor = entrada, acoes, cursor
+        self.mod_troca = getattr(entrada, "modificador_troca", Tecla.ALT)
+        self.mod_zoom = getattr(entrada, "modificador_zoom", Tecla.CTRL)
         self.ativo = True
         self.habilitados = {g.id for g in GESTOS}
         self.ganho_rolagem = 1.0
@@ -74,37 +76,37 @@ class Executor:
                 self.acoes.executar(AREAS[e.valor])
                 return "área à esquerda" if e.valor < 0 else "área à direita"
             case Tipo.ALT_TAB_INICIO:
-                self._apertar(Tecla.ALT)
+                self._apertar(self.mod_troca)
                 self._tocar(Tecla.TAB)
                 return "Alt+Tab"
             case Tipo.ALT_TAB_PROXIMO:
-                if Tecla.ALT not in self._pressionados:
+                if self.mod_troca not in self._pressionados:
                     # o início foi pulado (pausa ou gesto desligado): sem Alt, Tab seria digitado
-                    self._apertar(Tecla.ALT)
+                    self._apertar(self.mod_troca)
                     self._tocar(Tecla.TAB)
                     return "Alt+Tab"
                 self._tocar(Tecla.TAB)
                 return "próxima janela"
             case Tipo.ALT_TAB_ANTERIOR:
-                if Tecla.ALT not in self._pressionados:
-                    self._apertar(Tecla.ALT)
+                if self.mod_troca not in self._pressionados:
+                    self._apertar(self.mod_troca)
                 s.tecla(Tecla.SHIFT, True)
                 self._tocar(Tecla.TAB)
                 s.tecla(Tecla.SHIFT, False)
                 return "janela anterior"
             case Tipo.ALT_TAB_FIM:
-                return "escolheu a janela" if self._soltar(Tecla.ALT) else None
+                return "escolheu a janela" if self._soltar(self.mod_troca) else None
             case Tipo.ZOOM_INICIO:
                 # Ctrl fica segurado a sessão inteira: apertar e soltar junto de cada passo, em
                 # dispositivos diferentes, deixava o KDE ver a roda antes do Ctrl (rolava em vez de zoom)
-                self._apertar(Tecla.CTRL)
+                self._apertar(self.mod_zoom)
             case Tipo.ZOOM:
-                if Tecla.CTRL not in self._pressionados:
-                    self._apertar(Tecla.CTRL)
+                if self.mod_zoom not in self._pressionados:
+                    self._apertar(self.mod_zoom)
                 s.rolar(0, ENTALHE * e.valor, 0, e.valor)
                 return "zoom +" if e.valor > 0 else "zoom −"
             case Tipo.ZOOM_FIM:
-                self._soltar(Tecla.CTRL)
+                self._soltar(self.mod_zoom)
             case _ if e.tipo in ACOES:
                 acao, descricao = ACOES[e.tipo]
                 self.acoes.executar(acao)

@@ -4,6 +4,7 @@ import sys
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 
+from controle.plataforma.atalhos import ATALHOS_GNOME, ATALHOS_MACOS, ATALHOS_WINDOWS, AcoesPorAtalho
 from controle.plataforma.base import AcoesJanela, AcoesNulas, Entrada, EntradaNula
 
 
@@ -31,24 +32,54 @@ def detectar(plataforma: str = sys.platform, ambiente: Mapping[str, str] = os.en
     return Ambiente(sistema, None, None)
 
 
+def _fabrica_padrao(sistema: str) -> Callable[[], Entrada]:
+    """Importa só o backend do sistema atual: cada um depende de uma biblioteca diferente."""
+    if sistema == "linux":
+        from controle.plataforma.linux import EntradaUinput
+        return EntradaUinput
+    if sistema == "windows":
+        from controle.plataforma.windows import EntradaWindows
+        return EntradaWindows
+    from controle.plataforma.macos import EntradaMacos
+    return EntradaMacos
+
+
+def _acoes(ambiente: Ambiente, entrada: Entrada) -> tuple[AcoesJanela, str | None]:
+    """As ações de janela do ambiente e, se faltar suporte, o aviso."""
+    if ambiente.sistema == "windows":
+        return AcoesPorAtalho(entrada, ATALHOS_WINDOWS), None
+    if ambiente.sistema == "macos":
+        return AcoesPorAtalho(entrada, ATALHOS_MACOS), None
+    if ambiente.area_de_trabalho == "kde":
+        from controle.plataforma.linux import AcoesKWin
+        return AcoesKWin(), None
+    if ambiente.area_de_trabalho == "gnome":
+        return AcoesPorAtalho(entrada, ATALHOS_GNOME), None
+    return AcoesNulas(), (f"Ações de janela ainda não suportadas em {ambiente.area_de_trabalho or 'este ambiente'}"
+                          " (só KDE e GNOME). Mouse, cliques, rolagem e zoom funcionam.")
+
+
 def criar_saida(ambiente: Ambiente, demonstracao: bool = False,
-                entrada_linux: Callable[[], Entrada] | None = None) -> Saida:
-    """`entrada_linux` substitui a criação dos dispositivos uinput (testes)."""
+                fabrica_entrada: Callable[[], Entrada] | None = None,
+                acessibilidade_liberada: Callable[[], bool] | None = None) -> Saida:
+    """`fabrica_entrada` e `acessibilidade_liberada` substituem o que é do sistema real (testes)."""
     if demonstracao:
         return Saida(EntradaNula(), AcoesNulas(), demonstracao=True)
-    if ambiente.sistema != "linux":
+    if ambiente.sistema not in ("linux", "windows", "macos"):
         return Saida(EntradaNula(), AcoesNulas(), demonstracao=True,
                      aviso=f"{ambiente.sistema}: ainda sem suporte para agir no sistema. "
                            "Rodando em modo demonstração.")
-    from controle.plataforma import linux  # só no Linux: depende de evdev
-
     try:
-        entrada = (entrada_linux or linux.EntradaUinput)()
-    except OSError as erro:
+        entrada = (fabrica_entrada or _fabrica_padrao(ambiente.sistema))()
+    except (OSError, ImportError) as erro:
+        origem = "/dev/uinput" if ambiente.sistema == "linux" else f"a entrada do {ambiente.sistema}"
         return Saida(EntradaNula(), AcoesNulas(), demonstracao=True,
-                     aviso=f"Sem acesso a /dev/uinput ({erro}). Rodando em modo demonstração.")
-    if ambiente.area_de_trabalho == "kde":
-        return Saida(entrada, linux.AcoesKWin(), demonstracao=False)
-    return Saida(entrada, AcoesNulas(), demonstracao=False,
-                 aviso=f"Ações de janela ainda não suportadas em {ambiente.area_de_trabalho or 'este ambiente'}"
-                       " (só no KDE). Mouse, cliques, rolagem e zoom funcionam.")
+                     aviso=f"Sem acesso a {origem} ({erro}). Rodando em modo demonstração.")
+    acoes, aviso = _acoes(ambiente, entrada)
+    if ambiente.sistema == "macos":
+        if acessibilidade_liberada is None:
+            from controle.plataforma.macos import acessibilidade_liberada
+        if not acessibilidade_liberada():
+            aviso = ("Falta a permissão de Acessibilidade: libere este programa em Ajustes do Sistema → "
+                     "Privacidade e Segurança → Acessibilidade e abra de novo.")
+    return Saida(entrada, acoes, demonstracao=False, aviso=aviso)

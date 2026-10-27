@@ -43,7 +43,7 @@ def test_demonstracao_nunca_age_no_sistema():
 def test_kde_usa_uinput_e_kwin():
     from controle.plataforma.linux import AcoesKWin
     s = criar_saida(Ambiente("linux", "kde", "wayland"), demonstracao=False,
-                    entrada_linux=EntradaFalsaLinux)
+                    fabrica_entrada=EntradaFalsaLinux)
     assert isinstance(s.entrada, EntradaFalsaLinux) and isinstance(s.acoes, AcoesKWin)
     assert s.aviso is None and not s.demonstracao
 
@@ -51,18 +51,18 @@ def test_kde_usa_uinput_e_kwin():
 def test_sem_acesso_ao_uinput_cai_para_demonstracao_com_aviso():
     def sem_permissao():
         raise PermissionError("/dev/uinput")
-    s = criar_saida(Ambiente("linux", "kde", "wayland"), demonstracao=False, entrada_linux=sem_permissao)
+    s = criar_saida(Ambiente("linux", "kde", "wayland"), demonstracao=False, fabrica_entrada=sem_permissao)
     assert isinstance(s.entrada, EntradaNula) and s.demonstracao and "uinput" in s.aviso
 
 
-def test_linux_fora_do_kde_move_o_mouse_mas_avisa_que_janelas_ainda_nao():
-    s = criar_saida(Ambiente("linux", "gnome", "wayland"), demonstracao=False,
-                    entrada_linux=EntradaFalsaLinux)
+def test_linux_fora_do_kde_e_do_gnome_move_o_mouse_mas_avisa_que_janelas_ainda_nao():
+    s = criar_saida(Ambiente("linux", "xfce", "wayland"), demonstracao=False,
+                    fabrica_entrada=EntradaFalsaLinux)
     assert isinstance(s.entrada, EntradaFalsaLinux) and isinstance(s.acoes, AcoesNulas)
-    assert "gnome" in s.aviso.lower()
+    assert "xfce" in s.aviso.lower()
 
 
-@pytest.mark.parametrize("sistema", ["windows", "macos", "outro"])
+@pytest.mark.parametrize("sistema", ["outro"])
 def test_sistemas_ainda_sem_suporte_abrem_em_demonstracao_com_aviso(sistema):
     s = criar_saida(Ambiente(sistema, None, None), demonstracao=False)
     assert s.demonstracao and isinstance(s.entrada, EntradaNula) and s.aviso
@@ -85,8 +85,8 @@ def test_uinput_traduz_botoes_e_teclas_para_codigos_do_kernel():
     from evdev import ecodes
     from controle.plataforma.linux import CODIGO_BOTAO, CODIGO_TECLA
     assert CODIGO_BOTAO == {Botao.ESQUERDO: ecodes.BTN_LEFT, Botao.DIREITO: ecodes.BTN_RIGHT}
-    assert CODIGO_TECLA == {Tecla.ALT: ecodes.KEY_LEFTALT, Tecla.TAB: ecodes.KEY_TAB,
-                            Tecla.CTRL: ecodes.KEY_LEFTCTRL, Tecla.SHIFT: ecodes.KEY_LEFTSHIFT}
+    assert set(CODIGO_TECLA) == set(Tecla)
+    assert CODIGO_TECLA[Tecla.META] == ecodes.KEY_LEFTMETA and CODIGO_TECLA[Tecla.F4] == ecodes.KEY_F4
 
 
 def test_nucleo_nao_importa_evdev():

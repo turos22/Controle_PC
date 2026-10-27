@@ -171,11 +171,11 @@ argv fixo, sem desserialização insegura, sem rede, gravações com nomes fixos
 Fase 1:
 - [x] **M1 — Camada de plataforma**: separar entrada (mouse/teclado) de ações de janela;
       detectar sistema e ambiente; KDE atual vira um backend. Sem mudar comportamento no Linux.
-- [ ] **M2 — Linux GNOME/X11**: ações por atalhos de teclado via uinput.
-- [ ] **M3 — Windows**: SendInput, atalhos do Windows, câmera MSMF/DirectShow, escala de DPI.
-- [ ] **M4 — macOS**: Quartz (pyobjc), atalhos do macOS, câmera AVFoundation, aviso de
+- [x] **M2 — Linux GNOME/X11**: ações por atalhos de teclado via uinput.
+- [x] **M3 — Windows** (código e testes; falta prova no Windows real, M10): SendInput, atalhos do Windows, câmera MSMF/DirectShow, escala de DPI.
+- [x] **M4 — macOS** (código e testes com Quartz falso; sem prova real): Quartz (pyobjc), atalhos do macOS, câmera AVFoundation, aviso de
       permissões. Sem verificação real.
-- [ ] **M5 — Câmera**: escolher backend e resolução por câmera (tenta 1280x720@30 e cai para o
+- [x] **M5 — Câmera**: escolher backend e resolução por câmera (tenta 1280x720@30 e cai para o
       que houver).
 - [ ] **M6 — Perfil por usuário**: limites de pose e de gesto saem das constantes para um perfil
       salvo (JSON); valores atuais viram o padrão.
@@ -198,3 +198,19 @@ Fase 2:
   importa sem evdev (pré-requisito para Windows e macOS).
 - Linux fora do KDE: mouse/teclado funcionam e as ações de janela avisam que ainda não (M2).
 - Verificado no Linux do Arthur: detecta KDE/Wayland, monta uinput + KWin, programa ao vivo ok.
+
+### 2026-10-27 — M2 a M5 fechadas (309 testes passando)
+- `plataforma/atalhos.py`: `AcoesPorAtalho` + tabelas GNOME, Windows e macOS (aperta na ordem, solta ao
+  contrário). GNOME: Super+↑, Super (visão geral), Super+PgUp/PgDn, Alt+F4. Windows: Win+↑, Win+Tab,
+  Ctrl+Win+←/→, Alt+F4. macOS: Ctrl+Cmd+F (tela cheia, não há "maximizar"), Ctrl+↑, Ctrl+←/→, Cmd+W.
+- `Tecla` ganhou META, setas, PgUp/PgDn, F4, W, F. A entrada pode declarar `modificador_troca` e
+  `modificador_zoom`: no macOS ambos são Comando (Cmd+Tab troca de **aplicativo**, não de janela).
+- `plataforma/windows.py`: SendInput por ctypes, coordenadas absolutas sobre a área virtual (0–65535),
+  roda em alta resolução, teclas estendidas marcadas. `plataforma/macos.py`: Quartz (pyobjc), arrasto
+  como `LeftMouseDragged`, modificadores acumulados nas flags; aviso se faltar Acessibilidade.
+- `criar_saida` aceita `fabrica_entrada` e `acessibilidade_liberada` para teste; se a entrada real
+  falha (uinput, import), cai para demonstração com aviso.
+- `Camera`: backend por sistema (V4L2; MSMF → DirectShow; AVFoundation; sempre CAP_ANY por último),
+  libera o que não abriu; `--camera N` escolhe a câmera.
+- **Não verificado**: Windows/macOS/GNOME reais. Atalhos do GNOME e do macOS são os padrões de fábrica;
+  quem mudou os atalhos precisa ajustar `atalhos.py`.

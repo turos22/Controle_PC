@@ -11,8 +11,13 @@ from controle.plataforma.base import Acao, Botao, Tecla
 
 ESCALA_ABS = 65535
 CODIGO_BOTAO = {Botao.ESQUERDO: ecodes.BTN_LEFT, Botao.DIREITO: ecodes.BTN_RIGHT}
-CODIGO_TECLA = {Tecla.ALT: ecodes.KEY_LEFTALT, Tecla.TAB: ecodes.KEY_TAB,
-                Tecla.CTRL: ecodes.KEY_LEFTCTRL, Tecla.SHIFT: ecodes.KEY_LEFTSHIFT}
+CODIGO_TECLA = {
+    Tecla.ALT: ecodes.KEY_LEFTALT, Tecla.TAB: ecodes.KEY_TAB, Tecla.CTRL: ecodes.KEY_LEFTCTRL,
+    Tecla.SHIFT: ecodes.KEY_LEFTSHIFT, Tecla.META: ecodes.KEY_LEFTMETA, Tecla.CIMA: ecodes.KEY_UP,
+    Tecla.ESQUERDA: ecodes.KEY_LEFT, Tecla.DIREITA: ecodes.KEY_RIGHT, Tecla.PAGE_UP: ecodes.KEY_PAGEUP,
+    Tecla.PAGE_DOWN: ecodes.KEY_PAGEDOWN, Tecla.F4: ecodes.KEY_F4, Tecla.W: ecodes.KEY_W,
+    Tecla.F: ecodes.KEY_F,
+}
 ATALHO_KWIN = {
     Acao.MAXIMIZAR: "Window Maximize",
     Acao.VISAO_GERAL: "Overview",
@@ -24,6 +29,9 @@ ATALHO_KWIN = {
 
 class EntradaUinput:
     """Mouse absoluto + teclado virtuais."""
+
+    modificador_troca = Tecla.ALT
+    modificador_zoom = Tecla.CTRL
 
     def __init__(self):
         e = ecodes
