@@ -61,7 +61,7 @@ class Perfil:
     limites: dict = field(default_factory=dict)       # sobrescritas de poses.Limites
     parametros: dict = field(default_factory=dict)    # sobrescritas de gestos.Parametros
     ajustes: dict = field(default_factory=dict)       # estado do menu (velocidade, rolagem, ...)
-    idioma: str = "pt"
+    idioma: str | None = None                         # None: segue o idioma do sistema
     camera: int = 0
     avisos: list[str] = field(default_factory=list, compare=False)
 
@@ -83,10 +83,10 @@ class Perfil:
         if not isinstance(bruto, dict):
             return cls(avisos=[f"perfil: {caminho} não é um objeto JSON; usando os padrões"])
         avisos: list[str] = []
-        idioma = bruto.get("idioma", "pt")
-        if idioma not in IDIOMAS:
-            avisos.append(f"perfil: idioma '{idioma}' desconhecido; usando pt")
-            idioma = "pt"
+        idioma = bruto.get("idioma")
+        if idioma is not None and idioma not in IDIOMAS:
+            avisos.append(f"perfil: idioma '{idioma}' desconhecido; seguindo o do sistema")
+            idioma = None
         camera = bruto.get("camera", 0)
         if isinstance(camera, bool) or not isinstance(camera, int) or camera < 0:
             avisos.append("perfil: camera precisa ser um inteiro ≥ 0; usando 0")

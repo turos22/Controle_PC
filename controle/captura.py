@@ -4,6 +4,7 @@ import time
 
 import cv2
 
+from controle.idioma import tr
 from controle.plataforma import detectar
 
 
@@ -40,8 +41,8 @@ class Camera:
                 break
             cap.release()
         else:
-            raise RuntimeError(f"não abriu a câmera {self.indice} (outro programa usando, como o OBS, "
-                               "ou sem permissão de câmera para este programa?)")
+            raise RuntimeError(tr("não abriu a câmera {indice} (outro programa usando, como o OBS, "
+                                  "ou sem permissão de câmera para este programa?)", indice=self.indice))
         largura, altura, fps = self.pedido
         cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, largura)

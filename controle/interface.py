@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (QCheckBox, QComboBox, QFrame, QHBoxLayout, QLabel
                                QPushButton, QScrollArea, QSizePolicy, QSlider, QVBoxLayout, QWidget)
 
 from controle.gravacao import Gravador
+from controle.idioma import tr
 from controle.legenda import GESTOS
 from controle.pipeline import Resultado
 from controle.poses import Pose
@@ -109,7 +110,7 @@ class VideoWidget(QWidget):
         r = self._r
         if r is None:
             p.setPen(QColor(CORES["suave"]))
-            p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "Aguardando a câmera…")
+            p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, tr("Aguardando a câmera…"))
             return
         quadro = r.imagem if self.espelhar else np.ascontiguousarray(r.imagem[:, ::-1])
         altura, largura = quadro.shape[:2]
@@ -151,7 +152,8 @@ class VideoWidget(QWidget):
                 p.drawEllipse(caixa)
                 p.setPen(QPen(QColor(CORES["perigo"]), 6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
                 p.drawArc(caixa, 90 * 16, -int(estado.progresso_fechar * 360 * 16))
-            texto = estado.pose.value + (" · cursor" if estado.dono_cursor else "") + (" · zoom" if estado.em_zoom else "")
+            texto = tr(estado.pose.value) + (" · " + tr("cursor") if estado.dono_cursor else "") \
+                + (" · " + tr("zoom") if estado.em_zoom else "")
             self._pilula(p, ponto(cx / aspecto, cy) + QPointF(0, 40), texto, CORES["destaque"] if estado.dono_cursor else CORES["cartao"])
         p.setClipping(False)
         if r.pausado:
@@ -190,7 +192,7 @@ class VideoWidget(QWidget):
 
 
 def _secao(texto: str) -> QLabel:
-    rotulo = QLabel(texto.upper())
+    rotulo = QLabel(tr(texto).upper())
     rotulo.setObjectName("secao")
     return rotulo
 
@@ -234,58 +236,58 @@ class PainelMenu(QScrollArea):
         caixa.setSpacing(6)
 
         caixa.addWidget(_secao("Câmera"))
-        z = ControleDeslizante("Zoom", 10, 30, 10, lambda v: f"{v / 10:.1f}×")
+        z = ControleDeslizante(tr("Zoom"), 10, 30, 10, lambda v: f"{v / 10:.1f}×")
         self.zoom = z.slider
         caixa.addWidget(z)
-        self.espelhar = QCheckBox("Espelhar visualização")
+        self.espelhar = QCheckBox(tr("Espelhar visualização"))
         self.espelhar.setChecked(True)
         caixa.addWidget(self.espelhar)
 
         caixa.addWidget(_secao("Gravar sessão (calibração)"))
         self.gesto_gravacao = QComboBox()
         for gesto in GESTOS:
-            self.gesto_gravacao.addItem(gesto.nome, gesto.id)
-        self.gesto_gravacao.addItem("Livre (vários gestos)", "livre")
+            self.gesto_gravacao.addItem(tr(gesto.nome), gesto.id)
+        self.gesto_gravacao.addItem(tr("Livre (vários gestos)"), "livre")
         caixa.addWidget(self.gesto_gravacao)
-        self.botao_gravar = QPushButton("●  Gravar")
+        self.botao_gravar = QPushButton(tr("●  Gravar"))
         self.botao_gravar.setObjectName("pequeno")
         caixa.addWidget(self.botao_gravar)
-        self.rotulo_gravacao = QLabel("Grave cada gesto algumas vezes, do jeito que você faz.")
+        self.rotulo_gravacao = QLabel(tr("Grave cada gesto algumas vezes, do jeito que você faz."))
         self.rotulo_gravacao.setObjectName("suave")
         self.rotulo_gravacao.setWordWrap(True)
         caixa.addWidget(self.rotulo_gravacao)
         caixa.addWidget(_secao("Cursor"))
-        self.cursor_relativo = QCheckBox("Relativo, com aceleração")
+        self.cursor_relativo = QCheckBox(tr("Relativo, com aceleração"))
         self.cursor_relativo.setChecked(True)
         caixa.addWidget(self.cursor_relativo)
-        v = ControleDeslizante("Velocidade", 25, 400, 100, lambda v: f"{v}%")
+        v = ControleDeslizante(tr("Velocidade"), 25, 400, 100, lambda v: f"{v}%")
         self.velocidade = v.slider
         caixa.addWidget(v)
-        s = ControleDeslizante("Suavização", 0, 100, 40, lambda v: f"{v}%")
+        s = ControleDeslizante(tr("Suavização"), 0, 100, 40, lambda v: f"{v}%")
         self.suavizacao = s.slider
         caixa.addWidget(s)
-        r = ControleDeslizante("Região ativa (modo absoluto)", 30, 90, 60, lambda v: f"{v}%")
+        r = ControleDeslizante(tr("Região ativa (modo absoluto)"), 30, 90, 60, lambda v: f"{v}%")
         self.regiao = r.slider
         caixa.addWidget(r)
 
         caixa.addWidget(_secao("Rolagem"))
-        g = ControleDeslizante("Velocidade da rolagem", 25, 300, 100, lambda v: f"{v}%")
+        g = ControleDeslizante(tr("Velocidade da rolagem"), 25, 300, 100, lambda v: f"{v}%")
         self.rolagem = g.slider
         caixa.addWidget(g)
-        self.inverter_rolagem = QCheckBox("Inverter o sentido")
+        self.inverter_rolagem = QCheckBox(tr("Inverter o sentido"))
         caixa.addWidget(self.inverter_rolagem)
 
         caixa.addWidget(_secao("Exibição"))
-        self.landmarks = QCheckBox("Mostrar pontos da mão")
+        self.landmarks = QCheckBox(tr("Mostrar pontos da mão"))
         self.landmarks.setChecked(True)
-        self.mostrar_regiao = QCheckBox("Mostrar região ativa (modo absoluto)")
+        self.mostrar_regiao = QCheckBox(tr("Mostrar região ativa (modo absoluto)"))
         self.mostrar_regiao.setChecked(True)
         caixa.addWidget(self.landmarks)
         caixa.addWidget(self.mostrar_regiao)
 
         caixa.addWidget(_secao("Gestos ligados"))
         botoes = QHBoxLayout()
-        todos, nenhum = QPushButton("Todos"), QPushButton("Nenhum")
+        todos, nenhum = QPushButton(tr("Todos")), QPushButton(tr("Nenhum"))
         for b in (todos, nenhum):
             b.setObjectName("pequeno")
             botoes.addWidget(b)
@@ -293,7 +295,7 @@ class PainelMenu(QScrollArea):
         caixa.addLayout(botoes)
         self.caixas_gestos: dict[str, QCheckBox] = {}
         for gesto in GESTOS:
-            c = QCheckBox(gesto.nome)
+            c = QCheckBox(tr(gesto.nome))
             c.setChecked(True)
             self.caixas_gestos[gesto.id] = c
             caixa.addWidget(c)
@@ -342,9 +344,9 @@ class ItemLegenda(QFrame):
         caixa = QVBoxLayout(self)
         caixa.setContentsMargins(10, 8, 10, 8)
         caixa.setSpacing(2)
-        nome = QLabel(f"<b>{gesto.nome}</b>  <span style='color:{CORES['destaque']}'>→ {gesto.acao}</span>")
+        nome = QLabel(f"<b>{tr(gesto.nome)}</b>  <span style='color:{CORES['destaque']}'>→ {tr(gesto.acao)}</span>")
         nome.setWordWrap(True)
-        como = QLabel(gesto.como)
+        como = QLabel(tr(gesto.como))
         como.setWordWrap(True)
         como.setObjectName("suave")
         caixa.addWidget(nome)
@@ -370,7 +372,7 @@ class PainelLegenda(QScrollArea):
         caixa.setContentsMargins(14, 12, 14, 14)
         caixa.setSpacing(6)
         caixa.addWidget(_secao("Agora"))
-        self.agora = QLabel("Nenhuma mão no quadro")
+        self.agora = QLabel(tr("Nenhuma mão no quadro"))
         self.agora.setObjectName("suave")
         self.agora.setWordWrap(True)
         caixa.addWidget(self.agora)
@@ -393,11 +395,11 @@ class PainelLegenda(QScrollArea):
             self._acesos[gesto] = agora
             self.itens[gesto].definir("destaque", True)
         if r.estado:
-            linhas = [f"<b>Mão {e.ident}</b> · {POSE_TEXTO[e.pose]}" + (" <span style='color:#4cc2ff'>(cursor)</span>"
+            linhas = [f"<b>{tr('Mão {ident}', ident=e.ident)}</b> · {tr(POSE_TEXTO[e.pose])}" + (" <span style='color:#4cc2ff'>(cursor)</span>"
                       if e.dono_cursor else "") for e in r.estado]
             self.agora.setText("<br>".join(linhas))
         else:
-            self.agora.setText("Nenhuma mão no quadro")
+            self.agora.setText(tr("Nenhuma mão no quadro"))
 
     def destacado(self) -> str | None:
         return max(self._acesos, key=self._acesos.get) if self._acesos else None
@@ -422,7 +424,7 @@ class JanelaPrincipal(QMainWindow):
         self.pipeline = pipeline
         self.pasta_gravacoes = pasta_gravacoes
         self.executor = pipeline.executor
-        self.setWindowTitle("Controle por gestos")
+        self.setWindowTitle(tr("Controle por gestos"))
         self.setStyleSheet(ESTILO)
         self.resize(1500, 860)
 
@@ -434,7 +436,7 @@ class JanelaPrincipal(QMainWindow):
 
         esquerda = QVBoxLayout()
         esquerda.setSpacing(10)
-        titulo = QLabel("Controle por gestos")
+        titulo = QLabel(tr("Controle por gestos"))
         titulo.setObjectName("titulo")
         esquerda.addWidget(titulo)
         self.botao_pausa = QPushButton()
@@ -442,11 +444,11 @@ class JanelaPrincipal(QMainWindow):
         self.botao_pausa.setCursor(Qt.CursorShape.PointingHandCursor)
         self.botao_pausa.clicked.connect(self.alternar_pausa)
         esquerda.addWidget(self.botao_pausa)
-        dica = QLabel("Esc pausa · P pausa/retoma · Ctrl+Q sai")
+        dica = QLabel(tr("Esc pausa · P pausa/retoma · Ctrl+Q sai"))
         dica.setObjectName("suave")
         esquerda.addWidget(dica)
         if modo_demonstracao or aviso:
-            rotulo = QLabel(aviso or "Modo demonstração: os gestos aparecem, mas não agem no sistema.")
+            rotulo = QLabel(aviso or tr("Modo demonstração: os gestos aparecem, mas não agem no sistema."))
             rotulo.setObjectName("aviso")
             rotulo.setWordWrap(True)
             rotulo.setMaximumWidth(270)
@@ -464,7 +466,7 @@ class JanelaPrincipal(QMainWindow):
         linhas.addWidget(self.legenda)
         self.setCentralWidget(raiz)
 
-        self._status = QLabel("Iniciando…")
+        self._status = QLabel(tr("Iniciando…"))
         self.statusBar().addWidget(self._status, 1)
 
         QShortcut(QKeySequence("P"), self, activated=self.alternar_pausa)
@@ -494,8 +496,8 @@ class JanelaPrincipal(QMainWindow):
 
     def _atualizar_botao(self):
         pausado = not self.executor.ativo
-        self.botao_pausa.setText("▶  Pausado — clique para retomar" if pausado
-                                 else "⏸  Gestos ativos — clique para pausar")
+        self.botao_pausa.setText(tr("▶  Pausado — clique para retomar") if pausado
+                                 else tr("⏸  Gestos ativos — clique para pausar"))
         self.botao_pausa.setProperty("pausado", pausado)
         _repolir(self.botao_pausa)
 
@@ -504,19 +506,19 @@ class JanelaPrincipal(QMainWindow):
         gravador = self.pipeline.gravador
         if gravador is None:
             self.pipeline.gravador = Gravador(self.pasta_gravacoes, m.gesto_gravacao.currentData())
-            m.botao_gravar.setText("■  Parar e salvar")
+            m.botao_gravar.setText(tr("■  Parar e salvar"))
             m.gesto_gravacao.setEnabled(False)
-            m.rotulo_gravacao.setText("Gravando…")
+            m.rotulo_gravacao.setText(tr("Gravando…"))
             return
         self.pipeline.gravador = None
-        m.botao_gravar.setText("●  Gravar")
+        m.botao_gravar.setText(tr("●  Gravar"))
         m.gesto_gravacao.setEnabled(True)
-        m.rotulo_gravacao.setText("Salvando…")
+        m.rotulo_gravacao.setText(tr("Salvando…"))
 
         def salvar():  # compactar uma sessão longa não pode travar a janela
             caminho = gravador.salvar()
-            self.ponte.gravacao_salva.emit(f"Salvo: {caminho.name} ({gravador.quadros} quadros)" if caminho
-                                           else "Nada gravado.")
+            self.ponte.gravacao_salva.emit(tr("Salvo: {nome} ({quadros} quadros)", nome=caminho.name, quadros=gravador.quadros)
+                                           if caminho else tr("Nada gravado."))
 
         threading.Thread(target=salvar, name="gravacao", daemon=True).start()
 
@@ -553,16 +555,16 @@ class JanelaPrincipal(QMainWindow):
         self.legenda.atualizar(r)
         gravador = self.pipeline.gravador
         if gravador is not None:
-            self.menu.rotulo_gravacao.setText(f"Gravando… {gravador.quadros} quadros")
+            self.menu.rotulo_gravacao.setText(tr("Gravando… {quadros} quadros", quadros=gravador.quadros))
         agora = time.monotonic()
         if agora - self._ultima_status >= 0.25:  # barra legível: 4 atualizações por segundo
             self._ultima_status = agora
             m = r.metricas
             altura, largura = r.imagem.shape[:2]
             self._status.setText(
-                f"{m.fps:.0f} fps · MediaPipe {m.mediapipe_ms:.1f} ms · gestos {m.gestos_ms:.1f} ms · "
-                f"captura→ação {m.total_ms:.1f} ms · {largura}×{altura} · "
-                + ("pausado" if r.pausado else "ativo"))
+                f"{m.fps:.0f} fps · MediaPipe {m.mediapipe_ms:.1f} ms · "
+                + tr("gestos {gestos:.1f} ms · captura→ação {total:.1f} ms", gestos=m.gestos_ms, total=m.total_ms)
+                + f" · {largura}×{altura} · " + (tr("pausado") if r.pausado else tr("ativo")))
 
     def texto_status(self) -> str:
         return self._status.text()
@@ -574,7 +576,7 @@ class JanelaPrincipal(QMainWindow):
         try:
             self.perfil.salvar(self.caminho_perfil)
         except OSError as erro:  # disco cheio ou pasta sem escrita: sair importa mais que lembrar
-            print(f"Não consegui salvar o perfil em {self.caminho_perfil}: {erro}")
+            print(tr("Não consegui salvar o perfil em {caminho}: {erro}", caminho=self.caminho_perfil, erro=erro))
 
     def closeEvent(self, evento):
         self._salvar_perfil()

@@ -67,7 +67,7 @@ def test_valores_invalidos_sao_descartados_com_aviso(tmp_path):
     p = Perfil.carregar(caminho)
     assert p.limites == {"dobrado": 0.5}                 # só o válido sobra
     assert p.parametros == {}                            # int não aceita fração; negativo não vale
-    assert p.idioma == "pt" and p.camera == 0
+    assert p.idioma is None and p.camera == 0
     assert len(p.avisos) >= 5
 
 
@@ -109,3 +109,7 @@ def test_pasta_no_windows_usa_appdata():
 def test_pasta_no_macos_usa_application_support():
     home = pathlib.Path("/Users/ana")
     assert pasta_de_configuracao("macos", {}, home) == home / "Library" / "Application Support" / "controle-por-gestos"
+
+
+def test_sem_idioma_no_perfil_fica_para_o_idioma_do_sistema():
+    assert Perfil().idioma is None

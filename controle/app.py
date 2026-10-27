@@ -11,6 +11,7 @@ from PySide6.QtWidgets import QApplication, QMessageBox  # noqa: E402
 
 from controle.captura import Camera  # noqa: E402
 from controle.cursor import Cursor, Retangulo  # noqa: E402
+from controle.idioma import definir_idioma, idioma_do_sistema, tr  # noqa: E402
 from controle.interface import JanelaPrincipal  # noqa: E402
 from controle.perfil import Perfil, pasta_de_configuracao  # noqa: E402
 from controle.pipeline import Config, Pipeline  # noqa: E402
@@ -41,18 +42,19 @@ def main(argv: list[str] | None = None) -> int:
     print("Telas:", ", ".join(f"{t.w}x{t.h}+{t.x}+{t.y}" for t in telas))
 
     ambiente = detectar()
-    saida = criar_saida(ambiente, demonstracao)
-    print(f"Sistema: {ambiente.sistema} {ambiente.area_de_trabalho or ''} {ambiente.sessao or ''}".rstrip())
-
     caminho_perfil = pasta_de_configuracao(ambiente.sistema) / "perfil.json"
     perfil = Perfil.carregar(caminho_perfil)
     for aviso in perfil.avisos:
         print(aviso)
+    definir_idioma(perfil.idioma or idioma_do_sistema())
+    saida = criar_saida(ambiente, demonstracao)  # depois do idioma: os avisos saem traduzidos
+    print(f"Sistema: {ambiente.sistema} {ambiente.area_de_trabalho or ''} {ambiente.sessao or ''}".rstrip())
+
     camera = Camera(indice_da_camera(argv, perfil.camera))
     try:
         camera.iniciar()
     except RuntimeError as erro:
-        QMessageBox.critical(None, "Câmera", str(erro))
+        QMessageBox.critical(None, tr("Câmera"), str(erro))
         saida.entrada.fechar()
         return 1
 

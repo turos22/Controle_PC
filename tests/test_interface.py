@@ -198,3 +198,16 @@ def test_falha_ao_gravar_o_perfil_nao_impede_de_fechar(app, tmp_path):
     j = JanelaPrincipal(PipelineFalso(), pasta_gravacoes=tmp_path, perfil=Perfil(),
                         caminho_perfil=bloqueio / "perfil.json")
     j.close()
+
+
+def test_interface_em_ingles(app, tmp_path):
+    from controle import idioma
+    idioma.definir_idioma("en")
+    try:
+        p = PipelineFalso()
+        j = JanelaPrincipal(p, pasta_gravacoes=tmp_path)
+        assert j.windowTitle() == "Gesture control" and "Gestures active" in j.botao_pausa.text()
+        j.ao_resultado(resultado(maos=[mao_em("v01", 1.0)]))
+        j.close()
+    finally:
+        idioma.definir_idioma("pt")

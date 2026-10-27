@@ -4,6 +4,7 @@ import sys
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 
+from controle.idioma import tr
 from controle.plataforma.atalhos import ATALHOS_GNOME, ATALHOS_MACOS, ATALHOS_WINDOWS, AcoesPorAtalho
 from controle.plataforma.base import AcoesJanela, AcoesNulas, Entrada, EntradaNula
 
@@ -55,8 +56,9 @@ def _acoes(ambiente: Ambiente, entrada: Entrada) -> tuple[AcoesJanela, str | Non
         return AcoesKWin(), None
     if ambiente.area_de_trabalho == "gnome":
         return AcoesPorAtalho(entrada, ATALHOS_GNOME), None
-    return AcoesNulas(), (f"Ações de janela ainda não suportadas em {ambiente.area_de_trabalho or 'este ambiente'}"
-                          " (só KDE e GNOME). Mouse, cliques, rolagem e zoom funcionam.")
+    return AcoesNulas(), tr("Ações de janela ainda não suportadas em {ambiente} (só KDE e GNOME). "
+                            "Mouse, cliques, rolagem e zoom funcionam.",
+                            ambiente=ambiente.area_de_trabalho or tr("este ambiente"))
 
 
 def criar_saida(ambiente: Ambiente, demonstracao: bool = False,
@@ -67,19 +69,20 @@ def criar_saida(ambiente: Ambiente, demonstracao: bool = False,
         return Saida(EntradaNula(), AcoesNulas(), demonstracao=True)
     if ambiente.sistema not in ("linux", "windows", "macos"):
         return Saida(EntradaNula(), AcoesNulas(), demonstracao=True,
-                     aviso=f"{ambiente.sistema}: ainda sem suporte para agir no sistema. "
-                           "Rodando em modo demonstração.")
+                     aviso=tr("{sistema}: ainda sem suporte para agir no sistema. Rodando em modo demonstração.",
+                              sistema=ambiente.sistema))
     try:
         entrada = (fabrica_entrada or _fabrica_padrao(ambiente.sistema))()
     except (OSError, ImportError) as erro:
-        origem = "/dev/uinput" if ambiente.sistema == "linux" else f"a entrada do {ambiente.sistema}"
-        return Saida(EntradaNula(), AcoesNulas(), demonstracao=True,
-                     aviso=f"Sem acesso a {origem} ({erro}). Rodando em modo demonstração.")
+        aviso = (tr("Sem acesso a /dev/uinput ({erro}). Rodando em modo demonstração.", erro=erro)
+                 if ambiente.sistema == "linux"
+                 else tr("Sem acesso à entrada do sistema ({erro}). Rodando em modo demonstração.", erro=erro))
+        return Saida(EntradaNula(), AcoesNulas(), demonstracao=True, aviso=aviso)
     acoes, aviso = _acoes(ambiente, entrada)
     if ambiente.sistema == "macos":
         if acessibilidade_liberada is None:
             from controle.plataforma.macos import acessibilidade_liberada
         if not acessibilidade_liberada():
-            aviso = ("Falta a permissão de Acessibilidade: libere este programa em Ajustes do Sistema → "
-                     "Privacidade e Segurança → Acessibilidade e abra de novo.")
+            aviso = tr("Falta a permissão de Acessibilidade: libere este programa em Ajustes do Sistema → "
+                       "Privacidade e Segurança → Acessibilidade e abra de novo.")
     return Saida(entrada, acoes, demonstracao=False, aviso=aviso)

@@ -26,7 +26,7 @@ GESTOS = (
     Gesto("expandir", "Expandir janela", "Mão fechada, depois abra em L com o polegar bem aberto e "
           "segure ~0,3 s.", "Maximiza a janela"),
     Gesto("visao_geral", "Visão geral", "Mão aberta, feche em garra e abra de novo, rápido.",
-          "Visão geral do KDE"),
+          "Visão geral das janelas"),
     Gesto("area_de_trabalho", "Trocar de área", "Mão aberta varrendo rápido para o lado. Pare a mão "
           "antes de varrer de novo (o retorno não conta).", "Área à esquerda / à direita"),
     Gesto("alt_tab", "Alternar janelas", "Três dedos esticados (indicador, médio, anelar) abrem o "

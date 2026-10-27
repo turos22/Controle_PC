@@ -25,7 +25,7 @@ def executar(entrada, acoes, telas: list[Retangulo], pausa: float = 0.8, avisar=
         for x, y in ((t.x + MARGEM, t.y + MARGEM), (t.x + t.w - MARGEM, t.y + MARGEM),
                      (t.x + t.w - MARGEM, t.y + t.h - MARGEM), (t.x + MARGEM, t.y + t.h - MARGEM)):
             mover(x, y)
-    avisar("Abrindo a visão geral do KDE…")
+    avisar("Abrindo a visão geral das janelas…")
     acoes.executar(Acao.VISAO_GERAL)
     time.sleep(pausa * 2)
     avisar("…e fechando")
