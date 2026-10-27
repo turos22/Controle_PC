@@ -15,7 +15,7 @@ import numpy as np
 from mediapipe.tasks.python import vision
 
 RAIZ = pathlib.Path(__file__).resolve().parents[2]
-MODELO = RAIZ / "hand_landmarker.task"
+MODELO = RAIZ / "controle" / "dados" / "hand_landmarker.task"
 DESTINO = RAIZ / "tests" / "fixtures"
 FPS_ALVO = 30
 MAOS = 2

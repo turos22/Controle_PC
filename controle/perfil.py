@@ -31,6 +31,15 @@ def pasta_de_configuracao(sistema: str, ambiente: Mapping[str, str] = os.environ
     return base / NOME_DO_PROGRAMA
 
 
+def pasta_de_gravacoes(sistema: str, ambiente: Mapping[str, str] = os.environ, home: pathlib.Path | None = None,
+                       raiz: pathlib.Path = pathlib.Path(__file__).resolve().parents[1]) -> pathlib.Path:
+    """Rodando do código-fonte (há `pyproject.toml` ao lado), as gravações ficam no repositório, como sempre
+    ficaram; instalado, ficam na pasta de configuração do usuário (o pacote pode ser somente leitura)."""
+    if (raiz / "pyproject.toml").exists():
+        return raiz / "gravacoes"
+    return pasta_de_configuracao(sistema, ambiente, home) / "gravacoes"
+
+
 def _validar(secao: str, dados: object, classe, avisos: list[str]) -> dict:
     """Mantém só os campos que existem em `classe` e têm o tipo (e o sinal) do padrão."""
     if not isinstance(dados, dict):

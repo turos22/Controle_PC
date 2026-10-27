@@ -14,7 +14,9 @@ from controle.geometria import medir
 from controle.gravacao import Gravador
 from controle.idioma import tr
 from controle.legenda import GESTOS
+from controle.perfil import pasta_de_gravacoes
 from controle.pipeline import Resultado
+from controle.plataforma import detectar
 from controle.poses import Pose
 
 CORES = {
@@ -25,7 +27,7 @@ CORES = {
 DESTAQUE_S = 1.2
 CONEXOES = ((0, 1), (1, 2), (2, 3), (3, 4), (0, 5), (5, 6), (6, 7), (7, 8), (5, 9), (9, 10), (10, 11),
             (11, 12), (9, 13), (13, 14), (14, 15), (15, 16), (13, 17), (17, 18), (18, 19), (19, 20), (0, 17))
-PASTA_GRAVACOES = pathlib.Path(__file__).resolve().parents[1] / "gravacoes"
+PASTA_GRAVACOES = pasta_de_gravacoes(detectar().sistema)
 POSE_TEXTO = {
     Pose.INDICADOR: "indicador · cursor e clique (pinça)",
     Pose.DOIS_DEDOS: "dois dedos · rolagem joystick",

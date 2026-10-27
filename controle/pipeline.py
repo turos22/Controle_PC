@@ -17,7 +17,7 @@ from controle.poses import LIMITES_PADRAO, Limites
 from controle.reconhecedor import EstadoMao, Reconhecedor
 from controle.saida import Executor
 
-MODELO = pathlib.Path(__file__).resolve().parents[1] / "hand_landmarker.task"
+MODELO = pathlib.Path(__file__).resolve().parent / "dados" / "hand_landmarker.task"
 TAMANHO_INFERENCIA = (640, 360)  # o modelo reduz internamente; reduzir antes economiza tempo
 
 

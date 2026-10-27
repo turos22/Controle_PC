@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "controle-por-gestos"
+version = "0.3.0"
+description = "Controle do computador por gestos das mãos, em tempo real (Linux, Windows e macOS)."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "mediapipe>=1.1.1",
+    "opencv-contrib-python>=5.0.0.93",
+    "numpy>=2.5",
+    "PySide6-Essentials>=6.12",
+    "evdev>=2.0.0; sys_platform == 'linux'",
+    "pyobjc-framework-Quartz>=10; sys_platform == 'darwin'",
+    "pyobjc-framework-ApplicationServices>=10; sys_platform == 'darwin'",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=9.1"]
+empacotar = ["pyinstaller>=6.22"]
+
+[project.scripts]
+controle-por-gestos = "controle.app:main"
+
+[tool.setuptools.packages.find]
+include = ["controle*"]
+
+[tool.setuptools.package-data]
+controle = ["dados/*.task"]

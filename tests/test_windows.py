@@ -95,3 +95,23 @@ def test_fora_do_windows_criar_a_entrada_real_falha_com_oserror():
         pytest.skip("só vale fora do Windows")
     with pytest.raises(OSError):
         w.EntradaWindows()
+
+
+def test_tamanho_da_estrutura_input_no_windows():
+    # só tem como conferir no Windows: o SendInput recusa a chamada se o tamanho estiver errado
+    import ctypes
+    import sys
+
+    import pytest
+    if sys.platform != "win32":
+        pytest.skip("só vale no Windows")
+    assert ctypes.sizeof(w.INPUT) == (40 if ctypes.sizeof(ctypes.c_void_p) == 8 else 28)
+
+
+def test_envio_real_de_um_movimento_no_windows():
+    import sys
+
+    import pytest
+    if sys.platform != "win32":
+        pytest.skip("só vale no Windows")
+    w.EntradaWindows().mover_absoluto(0.5, 0.5)    # não pode levantar OSError

@@ -122,3 +122,16 @@ def test_calibrado_e_lembrado_e_valida_tipo(tmp_path):
     caminho.write_text(json.dumps({"calibrado": "sim"}))
     p = Perfil.carregar(caminho)
     assert p.calibrado is False and p.avisos
+
+
+def test_gravacoes_ficam_no_repositorio_quando_roda_do_codigo_fonte():
+    from controle.perfil import pasta_de_gravacoes
+    raiz = pathlib.Path(__file__).resolve().parents[1]
+    assert pasta_de_gravacoes("linux", {}, pathlib.Path("/home/ana"), raiz=raiz) == raiz / "gravacoes"
+
+
+def test_gravacoes_ficam_na_pasta_de_dados_quando_instalado():
+    from controle.perfil import pasta_de_gravacoes
+    instalado = pathlib.Path("/usr/lib/python3/site-packages")        # sem pyproject.toml nem tests ao lado
+    home = pathlib.Path("/home/ana")
+    assert pasta_de_gravacoes("linux", {}, home, raiz=instalado) == home / ".config" / "controle-por-gestos" / "gravacoes"

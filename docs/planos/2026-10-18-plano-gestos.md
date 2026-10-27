@@ -182,12 +182,12 @@ Fase 1:
 - [x] **M7 — Assistente de calibração**: grava cada gesto, ajusta os limites pela distribuição das
       medidas (mesmas análises feitas à mão), confirma com a pessoa e salva no perfil.
 - [x] **M8 — Português e inglês** na interface e na legenda.
-- [ ] **M9 — Instalação**: `pyproject.toml` com dependências por sistema e comando
+- [x] **M9 — Instalação**: `pyproject.toml` com dependências por sistema e comando
       `controle-por-gestos`; README em PT e EN com instruções por sistema.
-- [ ] **M10 — Verificação no Windows** com o Arthur (guia de testes por sistema).
+- [~] **M10 — Verificação no Windows** (guia e testes só-Windows prontos; falta o Arthur rodar) com o Arthur (guia de testes por sistema).
 
 Fase 2:
-- [ ] **M11 — Instaladores** (.exe, .dmg, AppImage).
+- [~] **M11 — Instaladores** (.exe, .dmg, AppImage).
 
 ### 2026-10-27 — M1 fechada (265 testes passando)
 - `controle/plataforma/`: `base.py` (vocabulário neutro `Botao`, `Tecla`, `Acao`; protocolos
@@ -241,3 +241,20 @@ Fase 2:
 - Verificado: suíte; renderização offscreen do diálogo e da janela em inglês; programa abre ao vivo no KDE
   com configuração limpa. **Não verificado**: a calibração com a mão real (a limitação dos limiares é a
   própria distribuição das poses; precisa de uma pessoa executando o assistente).
+
+### 2026-10-27 — M9, M10 (preparada) e M11 (parcial) — 367 testes passando, 2 ignorados (só Windows)
+- `pyproject.toml` (setuptools): dependências por sistema (`evdev` no Linux, `pyobjc` no macOS), comando
+  `controle-por-gestos`, `python -m controle`, extras `dev` e `empacotar`. Modelo do MediaPipe movido para
+  `controle/dados/` (vai dentro do pacote). Gravações: no repositório quando roda do código-fonte, na pasta
+  do perfil quando instalado.
+- Verificado: wheel gerado contém modelo e ponto de entrada; instalado em venv limpo (dependências pesadas
+  emprestadas do `.venv`) acha o modelo e usa a pasta de configuração.
+- README em PT e EN, instalação por sistema e tabela de situação por sistema (só KDE verificado).
+- M10: `docs/verificacao-windows.md` + dois testes que só rodam no Windows (tamanho da estrutura `INPUT`
+  e um `SendInput` real). **Pendente: o Arthur rodar no Windows.**
+- M11: `packaging/construir.py` (PyInstaller; `.zip` no Windows, `.dmg` no macOS, `.tar.gz` no Linux) e
+  `.github/workflows/ci.yml` (testes em Linux/Windows/macOS × Python 3.12/3.13 e pacotes como artefatos).
+  Verificado **só no Linux**: pacote de 237 MB gerado, extraído e executado em demonstração por 10 s com o
+  MediaPipe rodando. PyInstaller 6.11 falha com o numpy 2.5 (precisa do ≥ 6.22). **Não verificado**: o CI
+  nunca rodou (nada foi enviado ao GitHub), o `.dmg` e o `.zip`. **Abertos**: instalador `.exe` de verdade
+  (Inno Setup) e AppImage; assinatura de código (Windows SmartScreen e Gatekeeper do macOS vão avisar).
