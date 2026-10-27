@@ -169,7 +169,7 @@ tests/
 argv fixo, sem desserialização insegura, sem rede, gravações com nomes fixos).
 
 Fase 1:
-- [ ] **M1 — Camada de plataforma**: separar entrada (mouse/teclado) de ações de janela;
+- [x] **M1 — Camada de plataforma**: separar entrada (mouse/teclado) de ações de janela;
       detectar sistema e ambiente; KDE atual vira um backend. Sem mudar comportamento no Linux.
 - [ ] **M2 — Linux GNOME/X11**: ações por atalhos de teclado via uinput.
 - [ ] **M3 — Windows**: SendInput, atalhos do Windows, câmera MSMF/DirectShow, escala de DPI.
@@ -188,3 +188,13 @@ Fase 1:
 
 Fase 2:
 - [ ] **M11 — Instaladores** (.exe, .dmg, AppImage).
+
+### 2026-10-27 — M1 fechada (265 testes passando)
+- `controle/plataforma/`: `base.py` (vocabulário neutro `Botao`, `Tecla`, `Acao`; protocolos
+  `Entrada` e `AcoesJanela`; versões nulas), `linux.py` (uinput + KWin) e `__init__.py`
+  (`detectar()` lê sistema, `XDG_CURRENT_DESKTOP` e `XDG_SESSION_TYPE`; `criar_saida()` monta a
+  saída e devolve aviso quando cai para demonstração ou tem suporte parcial).
+- `Executor(entrada, acoes, cursor)` não conhece mais evdev nem KWin; teste garante que o núcleo
+  importa sem evdev (pré-requisito para Windows e macOS).
+- Linux fora do KDE: mouse/teclado funcionam e as ações de janela avisam que ainda não (M2).
+- Verificado no Linux do Arthur: detecta KDE/Wayland, monta uinput + KWin, programa ao vivo ok.

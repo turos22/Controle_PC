@@ -1,10 +1,16 @@
 from controle.cursor import Cursor, Retangulo
 from controle.eventos import Evento, Tipo
 from controle.legenda import GESTOS, gesto_do_evento
-from controle.saida import BOTAO_DIREITO, BOTAO_ESQUERDO, CTRL, ALT, SHIFT, TAB, Executor
+from controle.plataforma.base import Acao, Botao, Tecla
+from controle.saida import Executor
+
+BOTAO_ESQUERDO, BOTAO_DIREITO = Botao.ESQUERDO, Botao.DIREITO
+ALT, TAB, CTRL, SHIFT = Tecla.ALT, Tecla.TAB, Tecla.CTRL, Tecla.SHIFT
 
 
 class SaidaFalsa:
+    """Entrada e ações de janela falsas: registram as chamadas."""
+
     def __init__(self):
         self.chamadas = []
 
@@ -20,15 +26,15 @@ class SaidaFalsa:
     def tecla(self, codigo, pressionada):
         self.chamadas.append(("tecla", codigo, pressionada))
 
-    def atalho_kwin(self, nome):
-        self.chamadas.append(("kwin", nome))
+    def executar(self, acao):
+        self.chamadas.append(("acao", acao))
 
 
 def executor():
     saida = SaidaFalsa()
     cursor = Cursor([Retangulo(0, 0, 1920, 1080)], modo="absoluto", regiao=0.5, aspecto=16 / 9,
                     centro_regiao=(8 / 9, 0.5), suavizar=False)
-    return Executor(saida, cursor), saida
+    return Executor(saida, saida, cursor), saida
 
 
 def ev(tipo, **kw):
@@ -71,13 +77,13 @@ def test_rolagem_manda_alta_resolucao_e_entalhe_classico_ao_completar_120():
     assert saida.chamadas == [("rolar", 0, 60, 0, 0), ("rolar", 0, 72, 0, 1)]
 
 
-def test_atalhos_do_kwin():
+def test_acoes_de_janela():
     ex, saida = executor()
     ex.executar([ev(Tipo.EXPANDIR), ev(Tipo.VISAO_GERAL), ev(Tipo.AREA_DE_TRABALHO, valor=-1),
                  ev(Tipo.AREA_DE_TRABALHO, valor=1), ev(Tipo.FECHAR_JANELA)])
-    assert saida.chamadas == [("kwin", "Window Maximize"), ("kwin", "Overview"),
-                              ("kwin", "Switch One Desktop to the Left"),
-                              ("kwin", "Switch One Desktop to the Right"), ("kwin", "Window Close")]
+    assert saida.chamadas == [("acao", Acao.MAXIMIZAR), ("acao", Acao.VISAO_GERAL),
+                              ("acao", Acao.AREA_ESQUERDA), ("acao", Acao.AREA_DIREITA),
+                              ("acao", Acao.FECHAR_JANELA)]
 
 
 def test_alt_tab_segura_alt_e_toca_tab():

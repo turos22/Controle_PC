@@ -7,7 +7,8 @@ from controle.cursor import Cursor, Retangulo
 from controle.eventos import Evento, Tipo
 from controle.imagem import aplicar_zoom
 from controle.pipeline import Config, Pipeline
-from controle.saida import BOTAO_ESQUERDO, Executor
+from controle.plataforma.base import Botao
+from controle.saida import Executor
 from tests.test_saida import SaidaFalsa
 
 
@@ -51,7 +52,7 @@ def pipeline_com(camera, saida=None):
     saida = saida or SaidaFalsa()
     cursor = Cursor([Retangulo(0, 0, 1920, 1080)])
     resultados = []
-    p = Pipeline(camera, Executor(saida, cursor), Config(), ao_resultado=resultados.append)
+    p = Pipeline(camera, Executor(saida, saida, cursor), Config(), ao_resultado=resultados.append)
     return p, resultados, saida
 
 
@@ -111,9 +112,9 @@ def test_pausar_solta_botao_pressionado_e_bloqueia_acoes():
     p, _, _ = pipeline_com(CameraFalsa(total=0), saida)
     p.executor.executar([Evento(Tipo.SEGURAR_INICIO, 0, 1)])
     p.pausar()
-    assert saida.chamadas[-1] == ("botao", BOTAO_ESQUERDO, False)
+    assert saida.chamadas[-1] == ("botao", Botao.ESQUERDO, False)
     p.executor.executar([Evento(Tipo.CLIQUE, 0, 1, valor=1)])
-    assert saida.chamadas[-1] == ("botao", BOTAO_ESQUERDO, False)  # nada novo
+    assert saida.chamadas[-1] == ("botao", Botao.ESQUERDO, False)  # nada novo
     p.retomar()
     assert p.executor.ativo
 

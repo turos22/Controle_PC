@@ -7,15 +7,16 @@ import sys
 import time
 
 from controle.cursor import Retangulo, envolvente
+from controle.plataforma.base import Acao
 
 MARGEM = 40
 
 
-def executar(saida, telas: list[Retangulo], pausa: float = 0.8, avisar=print):
+def executar(entrada, acoes, telas: list[Retangulo], pausa: float = 0.8, avisar=print):
     area = envolvente(telas)
 
     def mover(x: float, y: float):
-        saida.mover_absoluto((x - area.x) / (area.w - 1), (y - area.y) / (area.h - 1))
+        entrada.mover_absoluto((x - area.x) / (area.w - 1), (y - area.y) / (area.h - 1))
         time.sleep(pausa)
 
     for i, t in enumerate(telas, start=1):
@@ -25,10 +26,10 @@ def executar(saida, telas: list[Retangulo], pausa: float = 0.8, avisar=print):
                      (t.x + t.w - MARGEM, t.y + t.h - MARGEM), (t.x + MARGEM, t.y + t.h - MARGEM)):
             mover(x, y)
     avisar("Abrindo a visão geral do KDE…")
-    saida.atalho_kwin("Overview")
+    acoes.executar(Acao.VISAO_GERAL)
     time.sleep(pausa * 2)
     avisar("…e fechando")
-    saida.atalho_kwin("Overview")
+    acoes.executar(Acao.VISAO_GERAL)
     t0 = telas[0]
     mover(t0.x + t0.w / 2, t0.y + t0.h / 2)
 
@@ -39,16 +40,18 @@ def main() -> int:
     from PySide6.QtWidgets import QApplication
 
     from controle.app import telas_do_qt
-    from controle.saida import SaidaUinput
+    from controle.plataforma import criar_saida, detectar
 
     app = QApplication(sys.argv)
     telas = telas_do_qt(app)
-    saida = SaidaUinput()
-    time.sleep(1)  # o KWin leva um instante para adotar o dispositivo novo
+    saida = criar_saida(detectar())
+    if saida.aviso:
+        print(saida.aviso)
+    time.sleep(1)  # o compositor leva um instante para adotar o dispositivo novo
     try:
-        executar(saida, telas)
+        executar(saida.entrada, saida.acoes, telas)
     finally:
-        saida.fechar()
+        saida.entrada.fechar()
     print("Fim. O ponteiro passou pelos cantos certos das duas telas?")
     return 0
 

@@ -71,7 +71,8 @@ controle/
   gestos.py       máquina de estados por mão → eventos
   reconhecedor.py identidade das mãos, zoom com as duas mãos, dono do cursor
   cursor.py       região ativa → telas, filtro One Euro
-  saida.py        uinput + atalhos do KWin
+  saida.py        executa os eventos no vocabulário neutro (botão, tecla, ação de janela)
+  plataforma/     detecta o sistema; entrada e ações por sistema (Linux: uinput + KWin)
   captura.py      thread de câmera (sempre o quadro mais recente)
   pipeline.py     câmera → MediaPipe → gestos → ações, com métricas
   interface.py    janela Qt

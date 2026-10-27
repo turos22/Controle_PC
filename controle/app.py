@@ -13,7 +13,8 @@ from controle.captura import Camera  # noqa: E402
 from controle.cursor import Cursor, Retangulo  # noqa: E402
 from controle.interface import JanelaPrincipal  # noqa: E402
 from controle.pipeline import Config, Pipeline  # noqa: E402
-from controle.saida import Executor, SaidaNula, SaidaUinput  # noqa: E402
+from controle.plataforma import criar_saida, detectar  # noqa: E402
+from controle.saida import Executor  # noqa: E402
 
 
 def telas_do_qt(app: QApplication) -> list[Retangulo]:
@@ -29,30 +30,27 @@ def main(argv: list[str] | None = None) -> int:
     telas = telas_do_qt(app)
     print("Telas:", ", ".join(f"{t.w}x{t.h}+{t.x}+{t.y}" for t in telas))
 
-    aviso = None
-    try:
-        saida = SaidaNula() if demonstracao else SaidaUinput()
-    except OSError as erro:
-        saida, demonstracao = SaidaNula(), True
-        aviso = f"Sem acesso a /dev/uinput ({erro}). Rodando em modo demonstração."
+    ambiente = detectar()
+    saida = criar_saida(ambiente, demonstracao)
+    print(f"Sistema: {ambiente.sistema} {ambiente.area_de_trabalho or ''} {ambiente.sessao or ''}".rstrip())
 
     camera = Camera()
     try:
         camera.iniciar()
     except RuntimeError as erro:
         QMessageBox.critical(None, "Câmera", str(erro))
-        saida.fechar()
+        saida.entrada.fechar()
         return 1
 
-    executor = Executor(saida, Cursor(telas))
+    executor = Executor(saida.entrada, saida.acoes, Cursor(telas))
     janela: JanelaPrincipal | None = None
     pipeline = Pipeline(camera, executor, Config(), ao_resultado=lambda r: janela.ponte.resultado.emit(r))
-    janela = JanelaPrincipal(pipeline, modo_demonstracao=demonstracao, aviso=aviso)
+    janela = JanelaPrincipal(pipeline, modo_demonstracao=saida.demonstracao, aviso=saida.aviso)
     thread = threading.Thread(target=pipeline.rodar, name="pipeline", daemon=True)
     thread.start()
     janela.show()
     codigo = app.exec()
     pipeline.parar()
     thread.join(timeout=3)
-    saida.fechar()
+    saida.entrada.fechar()
     return codigo

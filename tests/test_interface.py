@@ -9,14 +9,15 @@ from PySide6.QtWidgets import QApplication  # noqa: E402
 from controle.cursor import Cursor, Retangulo  # noqa: E402
 from controle.interface import JanelaPrincipal  # noqa: E402
 from controle.pipeline import Config, Metricas, Resultado  # noqa: E402
-from controle.saida import Executor, SaidaNula  # noqa: E402
+from controle.plataforma.base import AcoesNulas, EntradaNula  # noqa: E402
+from controle.saida import Executor  # noqa: E402
 from tests.conftest import mao_em  # noqa: E402
 
 
 class PipelineFalso:
     def __init__(self):
         self.config = Config()
-        self.executor = Executor(SaidaNula(), Cursor([Retangulo(0, 0, 1920, 1080)]))
+        self.executor = Executor(EntradaNula(), AcoesNulas(), Cursor([Retangulo(0, 0, 1920, 1080)]))
         self.gravador = None
         self.chamadas = []
 
