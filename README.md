@@ -3,6 +3,14 @@
 Controle do computador por gestos das mãos em tempo real, com Python, OpenCV e MediaPipe.
 Roda em **Linux, Windows e macOS**; só o Linux (KDE Plasma em Wayland) foi verificado de ponta a ponta.
 
+> [!NOTE]
+> **Inspiração:** este projeto partiu do [cv-controle-do-pc](https://github.com/SeraphZz/cv-controle-do-pc),
+> de [Augusto Ferraz (@SeraphZz)](https://github.com/SeraphZz). O original é um script único (`main.py`,
+> com PyAutoGUI) que move o cursor, rola a página e ajusta o volume por gestos, com ditado por voz.
+> A partir dele reescrevi o controle: máquina de estados de gestos calibrada com gravações reais,
+> entrada por `uinput` no Wayland, backends de Windows, macOS e GNOME, perfil e calibração por usuário,
+> e testes. Os commits iniciais do Augusto continuam no histórico deste repositório.
+
 | Sistema | Mouse e teclado | Ações de janela | Situação |
 |---|---|---|---|
 | Linux, KDE Plasma (Wayland ou X11) | `uinput` | atalhos do KWin por D-Bus | **verificado** |
