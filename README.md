@@ -146,4 +146,8 @@ As fixtures em `tests/fixtures/` são os landmarks extraídos dos vídeos de ref
 espelhados como no uso ao vivo. Para regerar a partir de uma pasta de vídeos:
 `.venv/bin/python tests/ferramentas/gerar_fixtures.py <pasta>`.
 
+## Licença
+
+[MIT](LICENSE). O modelo `controle/dados/hand_landmarker.task` vem do MediaPipe (Google) e segue a licença do MediaPipe.
+
 Python • OpenCV • MediaPipe • PySide6 • Computer Vision

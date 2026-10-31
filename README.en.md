@@ -113,4 +113,8 @@ The camera is opened at 1280x720, 30 fps.
 
 The tests run on any system: the Windows and macOS backends are tested with stand-ins.
 
+## License
+
+[MIT](LICENSE). The model `controle/dados/hand_landmarker.task` comes from MediaPipe (Google) and follows the MediaPipe license.
+
 Python • OpenCV • MediaPipe • PySide6 • Computer Vision
