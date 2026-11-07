@@ -1,50 +1,50 @@
-🖐️ Controle por gestos · [English](README.en.md)
+🖐️ Gesture control · [Português](README.md)
 
-Controle do computador por gestos das mãos em tempo real, com Python, OpenCV e MediaPipe.
-Roda em **Linux, Windows e macOS**; só o Linux (KDE Plasma em Wayland) foi verificado de ponta a ponta.
+Control your computer with hand gestures in real time, using Python, OpenCV and MediaPipe.
+It runs on **Linux, Windows and macOS**; only Linux (KDE Plasma on Wayland) has been verified end to end.
 
 > [!NOTE]
-> **Inspiração:** este projeto partiu do [cv-controle-do-pc](https://github.com/SeraphZz/cv-controle-do-pc),
-> de [Augusto Ferraz (@SeraphZz)](https://github.com/SeraphZz). O original é um script único (`main.py`,
-> com PyAutoGUI) que move o cursor, rola a página e ajusta o volume por gestos, com ditado por voz.
-> A partir dele reescrevi o controle: máquina de estados de gestos calibrada com gravações reais,
-> entrada por `uinput` no Wayland, backends de Windows, macOS e GNOME, perfil e calibração por usuário,
-> e testes. Os commits iniciais do Augusto continuam no histórico deste repositório.
+> **Inspiration:** this project started from [cv-controle-do-pc](https://github.com/SeraphZz/cv-controle-do-pc),
+> by [Augusto Ferraz (@SeraphZz)](https://github.com/SeraphZz). The original is a single script (`main.py`,
+> using PyAutoGUI) that moves the cursor, scrolls and changes the volume with gestures, plus voice dictation.
+> Starting from it, I rewrote the control: a gesture state machine calibrated with real recordings,
+> `uinput` input on Wayland, Windows, macOS and GNOME backends, per-user profile and calibration,
+> and tests. Augusto's initial commits remain in this repository's history.
 
-| Sistema | Mouse e teclado | Ações de janela | Situação |
+| System | Mouse and keyboard | Window actions | Status |
 |---|---|---|---|
-| Linux, KDE Plasma (Wayland ou X11) | `uinput` | atalhos do KWin por D-Bus | **verificado** |
-| Linux, GNOME | `uinput` | atalhos de teclado padrão | código e testes; sem prova |
-| Linux, outros | `uinput` | só mouse, cliques, rolagem e zoom | parcial |
-| Windows 10/11 | `SendInput` | atalhos do Windows | código e testes; sem prova no Windows real |
-| macOS | Quartz (pyobjc) | atalhos do macOS | código e testes com Quartz falso; sem prova |
+| Linux, KDE Plasma (Wayland or X11) | `uinput` | KWin shortcuts over D-Bus | **verified** |
+| Linux, GNOME | `uinput` | default keyboard shortcuts | code and tests; unproven |
+| Linux, others | `uinput` | mouse, clicks, scrolling and zoom only | partial |
+| Windows 10/11 | `SendInput` | Windows shortcuts | code and tests; unproven on real Windows |
+| macOS | Quartz (pyobjc) | macOS shortcuts | code and tests with a fake Quartz; unproven |
 
-## Gestos
+## Gestures
 
-Todos funcionam com qualquer uma das mãos. A janela do programa mostra a legenda completa e
-acende o gesto reconhecido na hora.
+All of them work with either hand. The program window shows the full legend and lights up the
+recognized gesture as it happens.
 
-| Gesto | Ação |
+| Gesture | Action |
 |---|---|
-| Indicador esticado (relativo, com aceleração) | move o cursor |
-| Apontando, polegar encosta e solta no indicador (duas vezes = duplo) | clique esquerdo |
-| Apontando, polegar encosta e solta no médio | clique direito |
-| Pinça fechada, parada um instante, e mover | segurar e arrastar (nada mais age enquanto isso) |
-| Dois dedos esticados, afastando a mão do ponto onde formou a pose | rolagem joystick (4 sentidos) |
-| Mão fechada → L com o polegar bem aberto | maximizar a janela |
-| Mão aberta → garra → aberta | visão geral |
-| Mão aberta varrendo rápido para o lado (parar antes da próxima) | área de trabalho à esquerda / à direita |
-| Três dedos (indicador, médio, anelar) + deslizar para os lados | Alt+Tab (mudar a pose escolhe) |
-| Polegar para baixo segurado ~0,8 s | fechar a janela |
-| Duas pinças ao mesmo tempo, afastando ou juntando | zoom (Ctrl + roda) |
+| Index finger extended (relative, with acceleration) | move the cursor |
+| Pointing, thumb quickly touches and releases the index finger (twice = double) | left click |
+| Pointing, thumb quickly touches and releases the middle finger | right click |
+| Closed pinch, held still for a moment, then move | hold and drag (nothing else acts meanwhile) |
+| Two fingers extended, moving the hand away from where the pose formed | joystick scroll (4 directions) |
+| Closed fist → L with the thumb wide open | maximize the window |
+| Open hand → claw → open | overview |
+| Open hand sweeping quickly sideways (stop before the next one) | desktop to the left / right |
+| Three fingers (index, middle, ring) + slide sideways | Alt+Tab (changing the pose chooses) |
+| Thumb down held ~0.8 s | close the window |
+| Two pinches at the same time, moving apart or together | zoom (Ctrl + wheel) |
 
-Roteiro de teste de cada gesto: [docs/guia-de-testes.md](docs/guia-de-testes.md). Verificação no Windows:
-[docs/verificacao-windows.md](docs/verificacao-windows.md).
+Per-gesture test script: [docs/guia-de-testes.md](docs/guia-de-testes.md) (Portuguese).
+Windows verification: [docs/verificacao-windows.md](docs/verificacao-windows.md) (Portuguese).
 
-## Instalação
+## Installation
 
-Precisa de Python 3.10 ou mais novo (testado no 3.13) e uma webcam. Se o `pip` não achar uma versão do
-`mediapipe` para o seu Python, use o Python 3.12.
+You need Python 3.10 or newer (tested on 3.13) and a webcam. If `pip` cannot find a `mediapipe`
+build for your Python, use Python 3.12.
 
 ### Linux
 
@@ -53,12 +53,12 @@ python -m venv .venv
 .venv/bin/pip install .
 ```
 
-O programa cria um mouse e um teclado virtuais em `/dev/uinput`. Confira o acesso com
-`test -w /dev/uinput && echo ok`. Sem isso ele abre em modo demonstração. Para liberar:
+The program creates a virtual mouse and keyboard through `/dev/uinput`. Check access with
+`test -w /dev/uinput && echo ok`. Without it, the program opens in demo mode. To allow it:
 
 ```bash
 echo 'KERNEL=="uinput", GROUP="input", MODE="0660", OPTIONS+="static_node=uinput"' | sudo tee /etc/udev/rules.d/99-uinput.rules
-sudo usermod -aG input $USER   # depois, saia da sessão e entre de novo
+sudo usermod -aG input $USER   # then log out and back in
 ```
 
 ### Windows
@@ -69,8 +69,8 @@ py -m venv .venv
 .venv\Scripts\controle-por-gestos
 ```
 
-- Libere o acesso à câmera em Configurações → Privacidade → Câmera.
-- O Windows não deixa um programa comum controlar janelas de programas abertos como administrador.
+- Allow camera access in Settings → Privacy → Camera.
+- Windows does not let a regular program control windows of programs running as administrator.
 
 ### macOS
 
@@ -80,82 +80,49 @@ python3 -m venv .venv
 .venv/bin/controle-por-gestos
 ```
 
-- Libere **Câmera** e **Acessibilidade** para o aplicativo de onde você roda o comando (Terminal, iTerm…)
-  em Ajustes do Sistema → Privacidade e Segurança. Sem Acessibilidade o programa avisa e nada age.
-- No Mac, "alternar janelas" é Comando+Tab (troca de **aplicativo**), "expandir" põe a janela em tela cheia
-  e o zoom usa Comando + roda.
+- Allow **Camera** and **Accessibility** for the app you run the command from (Terminal, iTerm…) in
+  System Settings → Privacy & Security. Without Accessibility the program warns you and nothing acts.
+- On a Mac, "switch windows" is Command+Tab (switches **applications**), "maximize" makes the window
+  full screen, and zoom uses Command + wheel.
 
-Para desenvolver: `pip install -e ".[dev]"`. O `requirements.txt` guarda as versões exatas em que o projeto
-foi testado.
+For development: `pip install -e ".[dev]"`. `requirements.txt` holds the exact versions the project was
+tested with.
 
-## Uso
+## Usage
 
 ```bash
-.venv/bin/controle-por-gestos      # ou: .venv/bin/python main.py / python -m controle
+.venv/bin/controle-por-gestos      # or: .venv/bin/python main.py / python -m controle
 ```
 
-- `--demonstracao`: reconhece e mostra os gestos sem agir no sistema.
-- `--camera N`: escolhe a câmera (0 é a primeira).
-- `Esc` pausa (só pausa, nunca retoma); `P` pausa e retoma. Pausar solta qualquer botão ou
-  tecla pressionado. `Ctrl+Q` sai.
-- **Calibração**: na primeira abertura o programa oferece calibrar os gestos para a sua mão (cerca de 40
-  segundos, sete poses). Dá para refazer pelo botão "Calibrar meus gestos". Se os padrões já servem, nada muda.
-- Menu à esquerda: calibrar, gravar sessão, zoom digital, espelhar a visualização, modo e velocidade do
-  cursor, suavização, velocidade e sentido da rolagem, ligar ou desligar cada gesto. Os ajustes ficam salvos.
-- Idioma: português ou inglês, conforme o sistema (ou `"idioma": "pt" | "en"` no perfil).
-- O perfil (`perfil.json`) fica em `~/.config/controle-por-gestos` (Linux), `%APPDATA%\controle-por-gestos`
-  (Windows) ou `~/Library/Application Support/controle-por-gestos` (macOS).
-- Gravações de sessão guardam só os pontos das mãos, nenhuma imagem: em `gravacoes/` no repositório, ou na
-  pasta do perfil quando instalado.
-- Diagnóstico da saída (passa o ponteiro pelos cantos das telas e abre/fecha a visão geral,
-  sem clicar): `python -m controle.diagnostico`.
+- `--demonstracao`: recognizes and shows gestures without acting on the system.
+- `--camera N`: pick the camera (0 is the first).
+- `Esc` pauses (only pauses, never resumes); `P` pauses and resumes. Pausing releases any pressed button or
+  key. `Ctrl+Q` quits.
+- **Calibration**: on first launch the program offers to calibrate the gestures to your hand (about 40
+  seconds, seven poses). You can redo it with the "Calibrate my gestures" button. If the defaults already
+  suit you, nothing changes.
+- Left menu: calibrate, record a session, digital zoom, mirror the preview, cursor mode and speed,
+  smoothing, scroll speed and direction, enable or disable each gesture. Your settings are saved.
+- Language: Portuguese or English, following the system (or `"idioma": "pt" | "en"` in the profile).
+- The profile (`perfil.json`) lives in `~/.config/controle-por-gestos` (Linux), `%APPDATA%\controle-por-gestos`
+  (Windows) or `~/Library/Application Support/controle-por-gestos` (macOS).
+- Session recordings keep only the hand landmarks, never images: in `gravacoes/` inside the repository, or in
+  the profile folder when installed.
+- Output diagnostics (moves the pointer through the corners of the screens and opens/closes the overview,
+  without clicking): `python -m controle.diagnostico`.
 
-A câmera é aberta em 1280x720 a 30 fps: nesta câmera é o mesmo campo de visão do 1080p (o
-640x480 corta as laterais) e o 1080p cai para 25 fps.
+The camera is opened at 1280x720, 30 fps.
 
-## Desempenho medido
-
-Com a câmera real, por quadro: MediaPipe ~9,4 ms, reconhecimento dos gestos + ações ~0,3 ms,
-da entrega do quadro até a ação ~10 ms (p95). O limite é a câmera, que entrega um quadro a
-cada 33 ms.
-
-## Estrutura
-
-```
-controle/
-  geometria.py    medidas da mão (retidão dos dedos, pinça, ângulo do polegar…)
-  poses.py        pose de cada quadro (indicador, dois dedos, pinça, punho, L, aberta, C)
-  gestos.py       máquina de estados por mão → eventos
-  reconhecedor.py identidade das mãos, zoom com as duas mãos, dono do cursor
-  cursor.py       região ativa → telas, filtro One Euro
-  saida.py        executa os eventos no vocabulário neutro (botão, tecla, ação de janela)
-  plataforma/     detecta o sistema; entrada e ações por sistema (linux, windows, macos, atalhos)
-  perfil.py       perfil do usuário em JSON (limiares, ajustes, idioma, câmera)
-  calibracao.py   calibração guiada dos limiares de pose
-  idioma.py       português e inglês
-  dados/          modelo do MediaPipe
-  captura.py      thread de câmera (sempre o quadro mais recente)
-  pipeline.py     câmera → MediaPipe → gestos → ações, com métricas
-  interface.py    janela Qt
-  legenda.py      catálogo dos gestos
-tests/            pytest; fixtures = landmarks dos vídeos de referência (sem imagens)
-docs/             spec, plano e guia de testes
-```
-
-## Testes
+## Tests
 
 ```bash
 .venv/bin/pytest
 ```
 
-Os testes rodam em qualquer sistema: os backends de Windows e macOS são testados com substitutos.
+The tests run on any system: the Windows and macOS backends are tested with stand-ins.
 
-As fixtures em `tests/fixtures/` são os landmarks extraídos dos vídeos de referência dos gestos,
-espelhados como no uso ao vivo. Para regerar a partir de uma pasta de vídeos:
-`.venv/bin/python tests/ferramentas/gerar_fixtures.py <pasta>`.
+## License
 
-## Licença
-
-[MIT](LICENSE). O modelo `controle/dados/hand_landmarker.task` vem do MediaPipe (Google) e segue a licença do MediaPipe.
+[MIT](LICENSE). The model `controle/dados/hand_landmarker.task` comes from MediaPipe (Google) and follows the MediaPipe license.
 
 Python • OpenCV • MediaPipe • PySide6 • Computer Vision
